@@ -8,8 +8,10 @@ gatk=/opt/gatk-4.1.4.1/gatk
 samtools=/opt/gatk4-data-processing/samtools-1.3.1/samtools
 picard=/opt/gatk4-data-processing/picard-2.16.0/picard.jar
 bwa=/opt/gatk4-data-processing/bwa-0.7.15/bwa
-refFasta=/home/
-bwaCommandline="bwa mem -K 100000000 -p -v 3 -t 16 -Y $bash_ref_fasta"
+refFasta=/home/bioinfuser/NGS/Reference/hg38/hg38.fasta
+
+bwaVersion="$($bwa 2>&1 | grep -e '^Version' | sed 's/Version: //')"
+bwaCommandline=" mem -K 100000000 -p -v 3 -t 16 -Y $refFasta"
 
 # USE THESE VARIABLES WITH $ ONLY
 
@@ -91,12 +93,37 @@ function validateSam {
             --QUIET true \
             -M SUMMARY \
             -O "${outputFolder}temporaryFiles/validate.txt"
+        
         local result=$(head -n 1 "${outputFolder}temporaryFiles/validate.txt")
+        
         if ! [[ $result == 'No errors found' ]]; then
             echo "${bam} is invalid"
             exit 1
         fi
     done
+}
+
+function samToFastqAndBwaMem {
+    local bam=$(basename -- "$1")
+    local output=$(echo "$bam" | cut -f 1 -d '.')
+    
+    java -jar $picard SamToFastq \
+        INPUT=$1 \
+        FASTQ=/dev/stdout \
+        INTERLEAVE=true \
+        NON_PF=true \
+    | \
+    ${bwa}${bwaCommandline} /dev/stdin -  2> >(tee ./${0}_logs/${output}.bwa.stderr.log >&2) \
+    | \
+    $samtools view -1 - > ${outputFolder}unmerged/${output}.bam
+}
+
+function parallelMapping {
+      
+    local files="${outputFolder}unmapped/*"
+    makeDirectory unmerged
+    export -f samToFastqAndBwaMem
+    parallel samToFastqAndBwaMem ::: $files
 }
 
 # MAIN
@@ -105,10 +132,9 @@ function validateSam {
 # pairedFastQsToUnmappedBAM
 # validateSam
 
-$bwa 2>&1 | grep -e '^Version' | sed 's/Version: //'
+parallelMapping
 
 # To do:
-# getBwaVersion: echo ${bwa} | grep -e '^Version' | sed 's/Version: //'
 # scatter:
 #   samToFastqAndBwaMem: picard samToFastq, bwa, samtools
 #   MergeBamAlignment
