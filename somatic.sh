@@ -6,7 +6,7 @@ platform=ILLUMINA
 runNumber=$3
 gatk=/opt/gatk-4.1.4.1/gatk
 samtools=/opt/gatk4-data-processing/samtools-1.3.1/samtools
-picard=/opt/gatk4-data-processing/picard-2.16.0/picard.jar
+export picard=/opt/gatk4-data-processing/picard-2.16.0/picard.jar
 bwa=/opt/gatk4-data-processing/bwa-0.7.15/bwa
 refFasta=/home/bioinfuser/NGS/Reference/hg38/hg38.fasta
 
