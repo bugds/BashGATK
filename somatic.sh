@@ -1,17 +1,17 @@
 #!/bin/bash
 
-inputFolder="$(realpath $1)/"
-outputFolder="$(realpath $2)/"
-platform=ILLUMINA
-runNumber=$3
-gatk=/opt/gatk-4.1.4.1/gatk
-samtools=/opt/gatk4-data-processing/samtools-1.3.1/samtools
-picard=/opt/gatk4-data-processing/picard-2.16.0/picard.jar
-bwa=/opt/gatk4-data-processing/bwa-0.7.15/bwa
-refFasta=/home/bioinfuser/NGS/Reference/hg38/hg38.fasta
+export inputFolder="$(realpath $1)/"
+export outputFolder="$(realpath $2)/"
+export platform=ILLUMINA
+export runNumber=$3
+export gatk=/opt/gatk-4.1.4.1/gatk
+export samtools=/opt/gatk4-data-processing/samtools-1.3.1/samtools
+export picard=/opt/gatk4-data-processing/picard-2.16.0/picard.jar
+export bwa=/opt/gatk4-data-processing/bwa-0.7.15/bwa
+export refFasta=/home/bioinfuser/NGS/Reference/hg38/hg38.fasta
 
-bwaVersion="$($bwa 2>&1 | grep -e '^Version' | sed 's/Version: //')"
-bwaCommandline=" mem -K 100000000 -p -v 3 -t 16 -Y $refFasta"
+export bwaVersion="$($bwa 2>&1 | grep -e '^Version' | sed 's/Version: //')"
+export bwaCommandline=" mem -K 100000000 -p -v 3 -t 16 -Y $refFasta"
 
 # USE THESE VARIABLES WITH $ ONLY
 
@@ -105,22 +105,22 @@ function validateSam {
 
 function samToFastqAndBwaMem {
     local bam=$(basename -- "$1")
-    local output=$(echo "$bam" | cut -f 1 -d '.')
-    
-    java -jar $picard SamToFastq \
+    local output=$(echo $bam | cut -f 1 -d '.')
+
+    sudo java -jar $picard SamToFastq \
         INPUT=$1 \
         FASTQ=/dev/stdout \
         INTERLEAVE=true \
         NON_PF=true \
     | \
-    ${bwa}${bwaCommandline} /dev/stdin -  2> >(tee ./${0}_logs/${output}.bwa.stderr.log >&2) \
+    ${bwa}${bwaCommandline} /dev/stdin - 2> >(tee ./somatic.sh_logs/${output}.bwa.stderr.log >&2) \
     | \
     $samtools view -1 - > ${outputFolder}unmerged/${output}.bam
 }
 
-function parallelMapping {
-      
+function parallelMapping {  
     local files="${outputFolder}unmapped/*"
+
     makeDirectory unmerged
     export -f samToFastqAndBwaMem
     parallel samToFastqAndBwaMem ::: $files
