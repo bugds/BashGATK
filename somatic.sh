@@ -12,6 +12,7 @@ export refFasta=/home/bioinfuser/NGS/Reference/hg38/hg38.fasta
 
 export bwaVersion="$($bwa 2>&1 | grep -e '^Version' | sed 's/Version: //')"
 export bwaCommandline=" mem -K 100000000 -p -v 3 -t 16 -Y $refFasta"
+export compressionLevel=5
 
 # USE THESE VARIABLES WITH $ ONLY
 
@@ -106,8 +107,9 @@ function validateSam {
 function samToFastqAndBwaMem {
     local bam=$(basename -- "$1")
     local output=$(echo $bam | cut -f 1 -d '.')
+    local javaOpt="-Xms3000m"
 
-    sudo java -jar $picard SamToFastq \
+    sudo java "-Dsamjdk.compression_level=${compressionLevel} ${javaOpt}" -jar $picard SamToFastq \
         INPUT=$1 \
         FASTQ=/dev/stdout \
         INTERLEAVE=true \
@@ -116,12 +118,38 @@ function samToFastqAndBwaMem {
     ${bwa}${bwaCommandline} /dev/stdin - 2> >(tee ./somatic.sh_logs/${output}.bwa.stderr.log >&2) \
     | \
     $samtools view -1 - > ${outputFolder}unmerged/${output}.bam
+    
+    $gatk --java-options "-Dsamjdk.compression_level=${compressionLevel} ${javaOpt}" MergeBamAlignment \
+      --VALIDATION_STRINGENCY SILENT \
+      --EXPECTED_ORIENTATIONS FR \
+      --ATTRIBUTES_TO_RETAIN X0 \
+      --ALIGNED_BAM "${outputFolder}unmerged/${output}.bam" \
+      --UNMAPPED_BAM ${1} \
+      --OUTPUT "${outputFolder}merged/${output}.bam" \
+      --REFERENCE_SEQUENCE ${refFasta} \
+      --PAIRED_RUN true \
+      --SORT_ORDER "unsorted" \
+      --IS_BISULFITE_SEQUENCE false \
+      --ALIGNED_READS_ONLY false \
+      --CLIP_ADAPTERS false \
+      --MAX_RECORDS_IN_RAM 2000000 \
+      --ADD_MATE_CIGAR true \
+      --MAX_INSERTIONS_OR_DELETIONS -1 \
+      --PRIMARY_ALIGNMENT_STRATEGY MostDistant \
+      --PROGRAM_RECORD_ID "bwamem" \
+      --PROGRAM_GROUP_VERSION "${bwaVersion}" \
+      --PROGRAM_GROUP_COMMAND_LINE "${bwaCommandline}" \
+      --PROGRAM_GROUP_NAME "bwamem" \
+      --UNMAPPED_READ_STRATEGY COPY_TO_TAG \
+      --ALIGNER_PROPER_PAIR_FLAGS true \
+      --UNMAP_CONTAMINANT_READS true
 }
 
 function parallelMapping {  
     local files="${outputFolder}unmapped/*"
 
     makeDirectory unmerged
+    makeDirectory merged
     export -f samToFastqAndBwaMem
     parallel samToFastqAndBwaMem ::: $files
 }
