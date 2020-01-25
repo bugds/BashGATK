@@ -109,7 +109,8 @@ function samToFastqAndBwaMem {
     local output=$(echo $bam | cut -f 1 -d '.')
     local javaOpt="-Xms3000m"
 
-    sudo java "-Dsamjdk.compression_level=${compressionLevel} ${javaOpt}" -jar $picard SamToFastq \
+    java --java-options "-Dsamjdk.compression_level=${compressionLevel} ${javaOpt}" -jar $picard \
+      SamToFastq \
         INPUT=$1 \
         FASTQ=/dev/stdout \
         INTERLEAVE=true \
@@ -119,30 +120,31 @@ function samToFastqAndBwaMem {
     | \
     $samtools view -1 - > ${outputFolder}unmerged/${output}.bam
     
-    $gatk --java-options "-Dsamjdk.compression_level=${compressionLevel} ${javaOpt}" MergeBamAlignment \
-      --VALIDATION_STRINGENCY SILENT \
-      --EXPECTED_ORIENTATIONS FR \
-      --ATTRIBUTES_TO_RETAIN X0 \
-      --ALIGNED_BAM "${outputFolder}unmerged/${output}.bam" \
-      --UNMAPPED_BAM ${1} \
-      --OUTPUT "${outputFolder}merged/${output}.bam" \
-      --REFERENCE_SEQUENCE ${refFasta} \
-      --PAIRED_RUN true \
-      --SORT_ORDER "unsorted" \
-      --IS_BISULFITE_SEQUENCE false \
-      --ALIGNED_READS_ONLY false \
-      --CLIP_ADAPTERS false \
-      --MAX_RECORDS_IN_RAM 2000000 \
-      --ADD_MATE_CIGAR true \
-      --MAX_INSERTIONS_OR_DELETIONS -1 \
-      --PRIMARY_ALIGNMENT_STRATEGY MostDistant \
-      --PROGRAM_RECORD_ID "bwamem" \
-      --PROGRAM_GROUP_VERSION "${bwaVersion}" \
-      --PROGRAM_GROUP_COMMAND_LINE "${bwaCommandline}" \
-      --PROGRAM_GROUP_NAME "bwamem" \
-      --UNMAPPED_READ_STRATEGY COPY_TO_TAG \
-      --ALIGNER_PROPER_PAIR_FLAGS true \
-      --UNMAP_CONTAMINANT_READS true
+    $gatk --java-options "-Dsamjdk.compression_level=${compressionLevel} ${javaOpt}" \
+      MergeBamAlignment \
+        --VALIDATION_STRINGENCY SILENT \
+        --EXPECTED_ORIENTATIONS FR \
+        --ATTRIBUTES_TO_RETAIN X0 \
+        --ALIGNED_BAM "${outputFolder}unmerged/${output}.bam" \
+        --UNMAPPED_BAM ${1} \
+        --OUTPUT "${outputFolder}merged/${output}.bam" \
+        --REFERENCE_SEQUENCE ${refFasta} \
+        --PAIRED_RUN true \
+        --SORT_ORDER "unsorted" \
+        --IS_BISULFITE_SEQUENCE false \
+        --ALIGNED_READS_ONLY false \
+        --CLIP_ADAPTERS false \
+        --MAX_RECORDS_IN_RAM 2000000 \
+        --ADD_MATE_CIGAR true \
+        --MAX_INSERTIONS_OR_DELETIONS -1 \
+        --PRIMARY_ALIGNMENT_STRATEGY MostDistant \
+        --PROGRAM_RECORD_ID "bwamem" \
+        --PROGRAM_GROUP_VERSION "${bwaVersion}" \
+        --PROGRAM_GROUP_COMMAND_LINE "${bwaCommandline}" \
+        --PROGRAM_GROUP_NAME "bwamem" \
+        --UNMAPPED_READ_STRATEGY COPY_TO_TAG \
+        --ALIGNER_PROPER_PAIR_FLAGS true \
+        --UNMAP_CONTAMINANT_READS true
 }
 
 function parallelMapping {  
@@ -154,18 +156,33 @@ function parallelMapping {
     parallel samToFastqAndBwaMem ::: $files
 }
 
+function markDuplicates {
+    local files="${outputFolder}merged/*"
+    local inputFiles=$(printf -- "--INPUT %s " $files)
+    local javaOpt="-Xms4000m"
+    makeDirectory duplicates_marked
+
+    $gatk --java-options "-Dsamjdk.compression_level=${compressionLevel} ${javaOpt}" \
+      MarkDuplicates \
+        --INPUT ${inputFiles}\
+        --OUTPUT ${outputFolder}duplicates_marked/$(basename -- ${outputFolder}).marked.bam \
+        --METRICS_FILE ${outputFolder}duplicates_marked/$(basename -- ${outputFolder}).mtrx \
+        --VALIDATION_STRINGENCY SILENT \
+        --OPTICAL_DUPLICATE_PIXEL_DISTANCE 2500 \
+        --ASSUME_SORT_ORDER "queryname" \
+        --CREATE_MD5_FILE true
+}
+
 # MAIN
 
 # AlreadyDone:
 # pairedFastQsToUnmappedBAM
 # validateSam
+# parallelMapping
 
-parallelMapping
+markDuplicates
 
 # To do:
-# scatter:
-#   samToFastqAndBwaMem: picard samToFastq, bwa, samtools
-#   MergeBamAlignment
 # MarkDuplicates
 # SortAndFixTags
 # CreateSequenceGroupingTSV
