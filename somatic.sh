@@ -11,7 +11,7 @@ export bwa=/opt/gatk4-data-processing/bwa-0.7.15/bwa
 export refFasta=/home/bioinfuser/NGS/Reference/hg38/hg38.fasta
 
 export bwaVersion="$($bwa 2>&1 | grep -e '^Version' | sed 's/Version: //')"
-export bwaCommandline=" mem -K 100000000 -p -v 3 -t 16 -Y $refFasta"
+export bwaCommandline="$bwa mem -K 100000000 -p -v 3 -t 16 -Y $refFasta"
 export compressionLevel=5
 
 # USE THESE VARIABLES WITH $ ONLY
@@ -116,7 +116,7 @@ function samToFastqAndBwaMem {
         INTERLEAVE=true \
         NON_PF=true \
     | \
-    ${bwa}${bwaCommandline} /dev/stdin - 2> >(tee ./somatic.sh_logs/${output}.bwa.stderr.log >&2) \
+    ${bwaCommandline} /dev/stdin - 2> >(tee ./somatic.sh_logs/${output}.bwa.stderr.log >&2) \
     | \
     $samtools view -1 - > ${outputFolder}unmerged/${output}.bam
     
@@ -156,15 +156,44 @@ function parallelMapping {
     parallel samToFastqAndBwaMem ::: $files
 }
 
-function markDuplicates {
+function sortAndFixTags {
     local files="${outputFolder}merged/*"
+    local javaOpt="-Xms4000m"
+    local javaOpt2="-Xms500m"
+    makeDirectory sorted
+
+    for bam in $files; do
+        base=$(basename -- "$bam")
+        output=$(echo $base | cut -f 1 -d '.')
+
+        $gatk --java-options "-Dsamjdk.compression_level=${compressionLevel} ${javaOpt}" \
+        SortSam \
+            --INPUT ${bam} \
+            --OUTPUT /dev/stdout \
+            --SORT_ORDER "coordinate" \
+            --CREATE_INDEX false \
+            --CREATE_MD5_FILE false \
+        | \
+        $gatk --java-options "-Dsamjdk.compression_level=${compressionLevel} ${javaOpt2}" \
+          SetNmMdAndUqTags \
+            --INPUT /dev/stdin \
+            --OUTPUT ${outputFolder}sorted/${output}.bam \
+            --CREATE_INDEX true \
+            --CREATE_MD5_FILE true \
+            --REFERENCE_SEQUENCE ${refFasta}
+    done
+}
+
+
+function markDuplicates {
+    local files="${outputFolder}sorted/*.bam"
     local inputFiles=$(printf -- "--INPUT %s " $files)
     local javaOpt="-Xms4000m"
     makeDirectory duplicates_marked
 
     $gatk --java-options "-Dsamjdk.compression_level=${compressionLevel} ${javaOpt}" \
       MarkDuplicates \
-        --INPUT ${inputFiles}\
+        ${inputFiles}\
         --OUTPUT ${outputFolder}duplicates_marked/$(basename -- ${outputFolder}).marked.bam \
         --METRICS_FILE ${outputFolder}duplicates_marked/$(basename -- ${outputFolder}).mtrx \
         --VALIDATION_STRINGENCY SILENT \
@@ -179,12 +208,13 @@ function markDuplicates {
 # pairedFastQsToUnmappedBAM
 # validateSam
 # parallelMapping
+# sortAndFixTags
 
-markDuplicates
+parallelMapping
+
+#markDuplicates
 
 # To do:
-# MarkDuplicates
-# SortAndFixTags
 # CreateSequenceGroupingTSV
 # scatter:
 #   BaseRecalibrator
