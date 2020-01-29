@@ -8,7 +8,12 @@ export gatk=/opt/gatk-4.1.4.1/gatk
 export samtools=/opt/gatk4-data-processing/samtools-1.3.1/samtools
 export picard=/opt/gatk4-data-processing/picard-2.16.0/picard.jar
 export bwa=/opt/gatk4-data-processing/bwa-0.7.15/bwa
+
 export refFasta=/home/bioinfuser/NGS/Reference/hg38/hg38.fasta
+export refDict=/home/bioinfuser/NGS/Reference/hg38/hg38.dict
+export dbSnpVcf=
+export millisVcf=
+export indelsVcf=
 
 export bwaVersion="$($bwa 2>&1 | grep -e '^Version' | sed 's/Version: //')"
 export bwaCommandline="$bwa mem -K 100000000 -p -v 3 -t 16 -Y $refFasta"
@@ -64,7 +69,7 @@ function fastqToSam {
     gatk FastqToSam \
         -F1 $forward \
         -F2 $reverse \
-        -O "${outputFolder}unmapped/${name}.unmapped.bam" \
+        -O "${outputFolder}unmapped/${name}.bam" \
         -RG $runNumber \
         -SM $sample \
         -LB $library \
@@ -109,7 +114,7 @@ function samToFastqAndBwaMem {
     local output=$(echo $bam | cut -f 1 -d '.')
     local javaOpt="-Xms3000m"
 
-    java --java-options "-Dsamjdk.compression_level=${compressionLevel} ${javaOpt}" -jar $picard \
+    java -Dsamjdk.compression_level=${compressionLevel} ${javaOpt} -jar $picard \
       SamToFastq \
         INPUT=$1 \
         FASTQ=/dev/stdout \
@@ -156,8 +161,27 @@ function parallelMapping {
     parallel samToFastqAndBwaMem ::: $files
 }
 
+function markDuplicates {
+    local files="${outputFolder}merged/*.bam"
+    # local inputFiles=$(printf -- "--INPUT %s " $files)
+    local javaOpt="-Xms4000m"
+    makeDirectory duplicates_marked
+
+    for bam in $files; do
+        $gatk --java-options "-Dsamjdk.compression_level=${compressionLevel} ${javaOpt}" \
+        MarkDuplicates \
+            --INPUT $bam \
+            --OUTPUT ${outputFolder}duplicates_marked/$(basename -- ${bam}) \
+            --METRICS_FILE ${outputFolder}duplicates_marked/$(basename -- ${bam}).mtrx \
+            --VALIDATION_STRINGENCY SILENT \
+            --OPTICAL_DUPLICATE_PIXEL_DISTANCE 2500 \
+            --ASSUME_SORT_ORDER "queryname" \
+            --CREATE_MD5_FILE true
+    done
+}
+
 function sortAndFixTags {
-    local files="${outputFolder}merged/*"
+    local files="${outputFolder}duplicates_marked/*.bam"
     local javaOpt="-Xms4000m"
     local javaOpt2="-Xms500m"
     makeDirectory sorted
@@ -184,22 +208,72 @@ function sortAndFixTags {
     done
 }
 
+function createSequenceGroupingTSV {
+    python - << EOF
+with open("${refDict}", "r") as ref_dict_file:
+    sequence_tuple_list = []
+    longest_sequence = 0
+    for line in ref_dict_file:
+        if line.startswith("@SQ"):
+            line_split = line.split("\t")
+            # (Sequence_Name, Sequence_Length)
+            sequence_tuple_list.append((line_split[1].split("SN:")[1], int(line_split[2].split("LN:")[1])))
+    longest_sequence = sorted(sequence_tuple_list, key=lambda x: x[1], reverse=True)[0][1]
+# We are adding this to the intervals because hg38 has contigs named with embedded colons (:) and a bug in 
+# some versions of GATK strips off the last element after a colon, so we add this as a sacrificial element.
+hg38_protection_tag = ":1+"
+# initialize the tsv string with the first sequence
+tsv_string = sequence_tuple_list[0][0] + hg38_protection_tag
+temp_size = sequence_tuple_list[0][1]
+for sequence_tuple in sequence_tuple_list[1:]:
+    if temp_size + sequence_tuple[1] <= longest_sequence:
+        temp_size += sequence_tuple[1]
+        tsv_string += "\t" + sequence_tuple[0] + hg38_protection_tag
+    else:
+        tsv_string += "\n" + sequence_tuple[0] + hg38_protection_tag
+        temp_size = sequence_tuple[1]
+# add the unmapped sequences as a separate line to ensure that they are recalibrated as well
+with open("${outputFolder}temporaryFiles/sequence_grouping.txt","w") \
+  as tsv_file:
+    tsv_file.write(tsv_string)
+    tsv_file.close()
 
-function markDuplicates {
+tsv_string += '\n' + "unmapped"
+
+with open("${outputFolder}temporaryFiles/sequence_grouping_with_unmapped.txt","w") \
+  as tsv_file_with_unmapped:
+    tsv_file_with_unmapped.write(tsv_string)
+    tsv_file_with_unmapped.close()
+EOF
+}
+
+function baseRecalibrator {
+    local group=$(cat /dev/stdin)
+    local intervals=$(printf -- "--INPUT %s " $group)
+    local knownSitesInput=$(printf -- "--known-sites %s " $knownSites)
+    local javaOpt='-Xms4000m'
+
+    $gatk --java-options ${javaOpt} \
+      BaseRecalibrator \
+        -R $refFasta \
+        -I $bam \
+        --use-original-qualities \
+        -O ${outputFolder}temporaryFiles/recalibration_report.txt \
+        --known-sites $dbSnpVcf \
+        --known-sites $millisVcf \
+        --known-sites $indelsVcf \
+        -L $intervals
+}
+
+function parallelRecalibration {
+    #readarray -t seqGroup <${outputFolder}temporaryFiles/sequence_grouping.txt
+    #parallel baseRecalibrator ::: "${seqGroup[@]}"
     local files="${outputFolder}sorted/*.bam"
-    local inputFiles=$(printf -- "--INPUT %s " $files)
-    local javaOpt="-Xms4000m"
-    makeDirectory duplicates_marked
 
-    $gatk --java-options "-Dsamjdk.compression_level=${compressionLevel} ${javaOpt}" \
-      MarkDuplicates \
-        ${inputFiles}\
-        --OUTPUT ${outputFolder}duplicates_marked/$(basename -- ${outputFolder}).marked.bam \
-        --METRICS_FILE ${outputFolder}duplicates_marked/$(basename -- ${outputFolder}).mtrx \
-        --VALIDATION_STRINGENCY SILENT \
-        --OPTICAL_DUPLICATE_PIXEL_DISTANCE 2500 \
-        --ASSUME_SORT_ORDER "queryname" \
-        --CREATE_MD5_FILE true
+    export -f baseRecalibrator
+    for bam in $file; do
+        cat ${outputFolder}temporaryFiles/sequence_grouping.txt | parallel -N1 --pipe baseRecalibrator
+    done
 }
 
 # MAIN
@@ -209,13 +283,13 @@ function markDuplicates {
 # validateSam
 # parallelMapping
 # sortAndFixTags
+# markDuplicates
+# sortAndFixTags
+# createSequenceGroupingTSV
 
-parallelMapping
-
-#markDuplicates
+parallelRecalibration
 
 # To do:
-# CreateSequenceGroupingTSV
 # scatter:
 #   BaseRecalibrator
 # GatherBqsrReports
