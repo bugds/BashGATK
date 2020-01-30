@@ -178,7 +178,8 @@ function markDuplicates {
             --METRICS_FILE ${outputFolder}duplicates_marked/$(basename -- ${bam}).mtrx \
             --VALIDATION_STRINGENCY SILENT \
             --OPTICAL_DUPLICATE_PIXEL_DISTANCE 2500 \
-            --ASSUME_SORT_ORDER "queryname" \
+            --SORTING_COLLECTION_SIZE_RATIO 0.25 \
+            --ASSUME_SORT_ORDER queryname \
             --CREATE_MD5_FILE true
     done
 }
@@ -257,6 +258,7 @@ function baseRecalibrator {
     local javaOpt='-Xms4000m'
     local bamName=$(basename -- ${bam} | cut -d "." -f 1)
     makeDirectory temporary_files/${bamName}_recalibration_report
+    makeDirectory temporary_files/${bamName}_recalibration_report/chunks
     local mark=$(echo $group[0] | cut -d ' ' -f 1)
 
     $gatk --java-options ${javaOpt} \
@@ -264,7 +266,7 @@ function baseRecalibrator {
         -R $refFasta \
         -I $bam \
         --use-original-qualities \
-        -O ${outputFolder}temporary_files/${bamName}_recalibration_report/${mark}.txt \
+        -O ${outputFolder}temporary_files/${bamName}_recalibration_report/chunks/${mark}.txt \
         --known-sites $dbSnpVcf \
         --known-sites $millisVcf \
         --known-sites $indelsVcf \
@@ -288,34 +290,103 @@ function parallelRecalibration {
     done
 }
 
+function gatherBqsrReports {
+    local files="${outputFolder}sorted/*.bam"
+    local javaOpt='-Xms3000m'
+
+    for bam in $files; do
+        local bamName=$(basename -- ${bam} | cut -d "." -f 1)
+        local reports=${outputFolder}temporary_files/${bamName}_recalibration_report/chunks/*
+        local inputBqsrReports=$(printf -- "-I %s " $reports)
+
+        $gatk --java-options ${javaOpt} \
+          GatherBQSRReports \
+            ${inputBqsrReports} \
+            -O ${outputFolder}temporary_files/${bamName}_recalibration_report/${bamName}.gathered.txt
+    done
+}
+
+function applyBqsr {
+    local group=$(cat /dev/stdin)
+    local intervals=$(printf -- "-L %s " $group)
+    local javaOpt='-Xms3000m'
+    local bamName=$(basename -- ${bam} | cut -d "." -f 1)
+    makeDirectory recalibrated/${bamName}
+    makeDirectory recalibrated/${bamName}/chunks
+    local mark=$(echo $group[0] | cut -d ' ' -f 1)
+
+    $gatk --java-options ${javaOpt} \
+      ApplyBQSR \
+        -R ${refFasta} \
+        -I ${bam} \
+        -O ${outputFolder}recalibrated/${bamName}/chunks/${mark}.bam \
+        ${intervals} \
+        -bqsr ${outputFolder}temporary_files/${bamName}_recalibration_report/${bamName}.gathered.txt \
+        --static-quantized-quals 10 --static-quantized-quals 20 --static-quantized-quals 30 \
+        --add-output-sam-program-record \
+        --create-output-bam-md5 \
+        --use-original-qualities
+}
+
+function parallelApplyBqsr {
+    local files="${outputFolder}sorted/*.bam"
+    makeDirectory recalibrated
+
+    export -f makeDirectory
+    export -f applyBqsr
+    for bam in $files; do
+        export bam=$bam
+        cat ${outputFolder}temporary_files/sequence_grouping_with_unmapped.txt | parallel -N1 --pipe applyBqsr
+    done
+}
+
+function gatherBamFiles {
+    local javaOpt='-Xms2000m'
+    local files="${outputFolder}sorted/*.bam"
+
+    for bam in $files; do
+        local bamName=$(basename -- ${bam} | cut -d "." -f 1)
+        local chunks=${outputFolder}recalibrated/${bamName}/chunks/*.bam
+        local prevChunk='///Nothing///'
+
+        for chunk in $chunks; do
+            if [[ $prevChunk == '///Nothing///' ]]; then
+                local prevChunk=$chunk
+            else
+                $gatk --java-options "-Dsamjdk.compression_level=${compressionLevel} ${javaOpt}" \
+                    GatherBamFiles \
+                    --INPUT $prevChunk \
+                    --INPUT $chunk \
+                    --OUTPUT ${outputFolder}recalibrated/${bamName}/${bamName}.bam \
+                    --CREATE_INDEX true \
+                    --CREATE_MD5_FILE true
+                local prevChunk=${outputFolder}recalibrated/${bamName}/${bamName}.bam
+            fi
+        done
+    done
+}
+
 # MAIN
 
-# AlreadyDone:
 # pairedFastQsToUnmappedBAM
+# sleep 10
 # validateSam
+# sleep 10
 # parallelMapping
-# sortAndFixTags
+# sleep 10
 # markDuplicates
+# sleep 10
 # sortAndFixTags
-# createSequenceGroupingTSV - needs to be done each reference update
-
-parallelRecalibration
+# sleep 10
+# createSequenceGroupingTSV # needs to be done each reference update
+# sleep 10
+# parallelRecalibration
+# sleep 10
+# gatherBqsrReports
+# sleep 10
+# parallelApplyBqsr
+# sleep 10
+gatherBamFiles
 
 # To do:
-# scatter:
-#   BaseRecalibrator
-# GatherBqsrReports
-# scatter:
-#   ApplyBQSR
 # GatherBamFiles
-
-
-# ValidateSamFile
-
-# gatk4-data-processing
-# SamToFastqAndBwaMem
-# MergeBamAlignment
-# MarkDuplicates
-# SortAndFixTags
-# CreateSequenceGroupingTSV
-#
