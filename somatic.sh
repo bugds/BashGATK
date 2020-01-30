@@ -11,9 +11,12 @@ export bwa=/opt/gatk4-data-processing/bwa-0.7.15/bwa
 
 export refFasta=/home/bioinfuser/NGS/Reference/hg38/hg38.fasta
 export refDict=/home/bioinfuser/NGS/Reference/hg38/hg38.dict
-export dbSnpVcf=
-export millisVcf=
-export indelsVcf=
+export dbSnpVcf=/home/bioinfuser/NGS/Reference/hg38/dbsnp138.vcf
+export dbSnpVcfIdx=/home/bioinfuser/NGS/Reference/hg38/dbsnp138.vcf.idx
+export millisVcf=/home/bioinfuser/NGS/Reference/hg38/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz
+export millisVcfIdx=/home/bioinfuser/NGS/Reference/hg38/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz.tbi
+export indelsVcf=/home/bioinfuser/NGS/Reference/hg38/known_indels.hg38.vcf.gz
+export indelsVcfIdx=/home/bioinfuser/NGS/Reference/hg38/known_indels.hg38.vcf.gz.tbi
 
 export bwaVersion="$($bwa 2>&1 | grep -e '^Version' | sed 's/Version: //')"
 export bwaCommandline="$bwa mem -K 100000000 -p -v 3 -t 16 -Y $refFasta"
@@ -91,16 +94,16 @@ function pairedFastQsToUnmappedBAM {
 
 function validateSam {
     local files="${outputFolder}unmapped/*"
-    makeDirectory temporaryFiles
+    makeDirectory temporary_files
 
     for bam in $files; do
         gatk ValidateSamFile \
             -I $bam \
             --QUIET true \
             -M SUMMARY \
-            -O "${outputFolder}temporaryFiles/validate.txt"
+            -O "${outputFolder}temporary_files/validate.txt"
         
-        local result=$(head -n 1 "${outputFolder}temporaryFiles/validate.txt")
+        local result=$(head -n 1 "${outputFolder}temporary_files/validate.txt")
         
         if ! [[ $result == 'No errors found' ]]; then
             echo "${bam} is invalid"
@@ -233,14 +236,14 @@ for sequence_tuple in sequence_tuple_list[1:]:
         tsv_string += "\n" + sequence_tuple[0] + hg38_protection_tag
         temp_size = sequence_tuple[1]
 # add the unmapped sequences as a separate line to ensure that they are recalibrated as well
-with open("${outputFolder}temporaryFiles/sequence_grouping.txt","w") \
+with open("${outputFolder}temporary_files/sequence_grouping.txt","w") \
   as tsv_file:
     tsv_file.write(tsv_string)
     tsv_file.close()
 
 tsv_string += '\n' + "unmapped"
 
-with open("${outputFolder}temporaryFiles/sequence_grouping_with_unmapped.txt","w") \
+with open("${outputFolder}temporary_files/sequence_grouping_with_unmapped.txt","w") \
   as tsv_file_with_unmapped:
     tsv_file_with_unmapped.write(tsv_string)
     tsv_file_with_unmapped.close()
@@ -249,30 +252,39 @@ EOF
 
 function baseRecalibrator {
     local group=$(cat /dev/stdin)
-    local intervals=$(printf -- "--INPUT %s " $group)
+    local intervals=$(printf -- "-L %s " $group)
     local knownSitesInput=$(printf -- "--known-sites %s " $knownSites)
     local javaOpt='-Xms4000m'
+    local bamName=$(basename -- ${bam} | cut -d "." -f 1)
+    makeDirectory temporary_files/${bamName}_recalibration_report
+    local mark=$(echo $group[0] | cut -d ' ' -f 1)
 
     $gatk --java-options ${javaOpt} \
       BaseRecalibrator \
         -R $refFasta \
         -I $bam \
         --use-original-qualities \
-        -O ${outputFolder}temporaryFiles/recalibration_report.txt \
+        -O ${outputFolder}temporary_files/${bamName}_recalibration_report/${mark}.txt \
         --known-sites $dbSnpVcf \
         --known-sites $millisVcf \
         --known-sites $indelsVcf \
-        -L $intervals
+        $intervals
 }
 
 function parallelRecalibration {
-    #readarray -t seqGroup <${outputFolder}temporaryFiles/sequence_grouping.txt
+    # Reading to an array:
+    #readarray -t seqGroup <${outputFolder}temporary_files/sequence_grouping.txt
+    # Take all elements of an array
     #parallel baseRecalibrator ::: "${seqGroup[@]}"
     local files="${outputFolder}sorted/*.bam"
 
+    export -f makeDirectory
     export -f baseRecalibrator
-    for bam in $file; do
-        cat ${outputFolder}temporaryFiles/sequence_grouping.txt | parallel -N1 --pipe baseRecalibrator
+    for bam in $files; do
+        export bam=$bam
+        # Had to use a pipe in GNU parallel due to problems with passing large
+        # strings to parallel directly (N1 means 1 line at a time)
+        cat ${outputFolder}temporary_files/sequence_grouping.txt | parallel -N1 --pipe baseRecalibrator
     done
 }
 
@@ -285,7 +297,7 @@ function parallelRecalibration {
 # sortAndFixTags
 # markDuplicates
 # sortAndFixTags
-# createSequenceGroupingTSV
+# createSequenceGroupingTSV - needs to be done each reference update
 
 parallelRecalibration
 
