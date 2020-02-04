@@ -9,6 +9,7 @@ export samtools=/opt/gatk4-data-processing/samtools-1.3.1/samtools
 export picard=/opt/gatk4-data-processing/picard-2.16.0/picard.jar
 export bwa=/opt/gatk4-data-processing/bwa-0.7.15/bwa
 
+export regions=/home/bioinfuser/NGS/Reference/intervals/2020_02_02/regions.bed
 export refFasta=/home/bioinfuser/NGS/Reference/hg38/hg38.fasta
 export refDict=/home/bioinfuser/NGS/Reference/hg38/hg38.dict
 export dbSnpVcf=/home/bioinfuser/NGS/Reference/hg38/dbsnp138.vcf
@@ -166,7 +167,7 @@ function parallelMapping {
 
 function markDuplicates {
     local files="${outputFolder}merged/*.bam"
-    # local inputFiles=$(printf -- "--INPUT %s " $files)
+    local inputFiles=$(printf -- "--INPUT %s " $files)
     local javaOpt="-Xms4000m"
     makeDirectory duplicates_marked
 
@@ -212,49 +213,9 @@ function sortAndFixTags {
     done
 }
 
-function createSequenceGroupingTSV {
-    python - << EOF
-with open("${refDict}", "r") as ref_dict_file:
-    sequence_tuple_list = []
-    longest_sequence = 0
-    for line in ref_dict_file:
-        if line.startswith("@SQ"):
-            line_split = line.split("\t")
-            # (Sequence_Name, Sequence_Length)
-            sequence_tuple_list.append((line_split[1].split("SN:")[1], int(line_split[2].split("LN:")[1])))
-    longest_sequence = sorted(sequence_tuple_list, key=lambda x: x[1], reverse=True)[0][1]
-# We are adding this to the intervals because hg38 has contigs named with embedded colons (:) and a bug in 
-# some versions of GATK strips off the last element after a colon, so we add this as a sacrificial element.
-hg38_protection_tag = ":1+"
-# initialize the tsv string with the first sequence
-tsv_string = sequence_tuple_list[0][0] + hg38_protection_tag
-temp_size = sequence_tuple_list[0][1]
-for sequence_tuple in sequence_tuple_list[1:]:
-    if temp_size + sequence_tuple[1] <= longest_sequence:
-        temp_size += sequence_tuple[1]
-        tsv_string += "\t" + sequence_tuple[0] + hg38_protection_tag
-    else:
-        tsv_string += "\n" + sequence_tuple[0] + hg38_protection_tag
-        temp_size = sequence_tuple[1]
-# add the unmapped sequences as a separate line to ensure that they are recalibrated as well
-with open("${outputFolder}temporary_files/sequence_grouping.txt","w") \
-  as tsv_file:
-    tsv_file.write(tsv_string)
-    tsv_file.close()
-
-tsv_string += '\n' + "unmapped"
-
-with open("${outputFolder}temporary_files/sequence_grouping_with_unmapped.txt","w") \
-  as tsv_file_with_unmapped:
-    tsv_file_with_unmapped.write(tsv_string)
-    tsv_file_with_unmapped.close()
-EOF
-}
-
 function baseRecalibrator {
-    local group=$(cat /dev/stdin)
-    local intervals=$(printf -- "-L %s " $group)
-    local knownSitesInput=$(printf -- "--known-sites %s " $knownSites)
+    local files="${outputFolder}sorted/*.bam"
+    local inputFiles=$(printf -- "-I %s " $files)
     local javaOpt='-Xms4000m'
     local bamName=$(basename -- ${bam} | cut -d "." -f 1)
     makeDirectory temporary_files/${bamName}_recalibration_report
@@ -264,129 +225,49 @@ function baseRecalibrator {
     $gatk --java-options ${javaOpt} \
       BaseRecalibrator \
         -R $refFasta \
-        -I $bam \
+        $inputFiles \
         --use-original-qualities \
-        -O ${outputFolder}temporary_files/${bamName}_recalibration_report/chunks/${mark}.txt \
+        -O ${outputFolder}temporary_files/recalibration_report_$runNumber.txt \
         --known-sites $dbSnpVcf \
         --known-sites $millisVcf \
         --known-sites $indelsVcf \
-        $intervals
-}
-
-function parallelRecalibration {
-    # Reading to an array:
-    #readarray -t seqGroup <${outputFolder}temporary_files/sequence_grouping.txt
-    # Take all elements of an array
-    #parallel baseRecalibrator ::: "${seqGroup[@]}"
-    local files="${outputFolder}sorted/*.bam"
-
-    export -f makeDirectory
-    export -f baseRecalibrator
-    for bam in $files; do
-        export bam=$bam
-        # Had to use a pipe in GNU parallel due to problems with passing large
-        # strings to parallel directly (N1 means 1 line at a time)
-        cat ${outputFolder}temporary_files/sequence_grouping.txt | parallel -N1 --pipe baseRecalibrator
-    done
-}
-
-function gatherBqsrReports {
-    local files="${outputFolder}sorted/*.bam"
-    local javaOpt='-Xms3000m'
-
-    for bam in $files; do
-        local bamName=$(basename -- ${bam} | cut -d "." -f 1)
-        local reports=${outputFolder}temporary_files/${bamName}_recalibration_report/chunks/*
-        local inputBqsrReports=$(printf -- "-I %s " $reports)
-
-        $gatk --java-options ${javaOpt} \
-          GatherBQSRReports \
-            ${inputBqsrReports} \
-            -O ${outputFolder}temporary_files/${bamName}_recalibration_report/${bamName}.gathered.txt
-    done
+        -L $regions
 }
 
 function applyBqsr {
-    local group=$(cat /dev/stdin)
-    local intervals=$(printf -- "-L %s " $group)
-    local javaOpt='-Xms3000m'
-    local bamName=$(basename -- ${bam} | cut -d "." -f 1)
-    makeDirectory recalibrated/${bamName}
-    makeDirectory recalibrated/${bamName}/chunks
-    local mark=$(echo $group[0] | cut -d ' ' -f 1)
-
-    $gatk --java-options ${javaOpt} \
-      ApplyBQSR \
-        -R ${refFasta} \
-        -I ${bam} \
-        -O ${outputFolder}recalibrated/${bamName}/chunks/${mark}.bam \
-        ${intervals} \
-        -bqsr ${outputFolder}temporary_files/${bamName}_recalibration_report/${bamName}.gathered.txt \
-        --static-quantized-quals 10 --static-quantized-quals 20 --static-quantized-quals 30 \
-        --add-output-sam-program-record \
-        --create-output-bam-md5 \
-        --use-original-qualities
-}
-
-function parallelApplyBqsr {
     local files="${outputFolder}sorted/*.bam"
     makeDirectory recalibrated
-
+    local javaOpt='-Xms3000m'
     export -f makeDirectory
     export -f applyBqsr
     for bam in $files; do
-        export bam=$bam
-        cat ${outputFolder}temporary_files/sequence_grouping_with_unmapped.txt | parallel -N1 --pipe applyBqsr
-    done
-}
-
-function gatherBamFiles {
-    local javaOpt='-Xms2000m'
-    local files="${outputFolder}sorted/*.bam"
-
-    for bam in $files; do
-        local bamName=$(basename -- ${bam} | cut -d "." -f 1)
-        local chunks=${outputFolder}recalibrated/${bamName}/chunks/*.bam
-        local prevChunk='///Nothing///'
-
-        for chunk in $chunks; do
-            if [[ $prevChunk == '///Nothing///' ]]; then
-                local prevChunk=$chunk
-            else
-                $gatk --java-options "-Dsamjdk.compression_level=${compressionLevel} ${javaOpt}" \
-                    GatherBamFiles \
-                    --INPUT $prevChunk \
-                    --INPUT $chunk \
-                    --OUTPUT ${outputFolder}recalibrated/${bamName}/${bamName}.bam \
-                    --CREATE_INDEX true \
-                    --CREATE_MD5_FILE true
-                local prevChunk=${outputFolder}recalibrated/${bamName}/${bamName}.bam
-            fi
-        done
+        local bamName=$(basename -- ${bam})
+        $gatk --java-options ${javaOpt} \
+          ApplyBQSR \
+            -R ${refFasta} \
+            -I ${bam} \
+            -O ${outputFolder}recalibrated/${bamName} \
+            ${intervals} \
+            -bqsr ${outputFolder}temporary_files/recalibration_report_$runNumber.txt \
+            --static-quantized-quals 10 --static-quantized-quals 20 --static-quantized-quals 30 \
+            --add-output-sam-program-record \
+            --create-output-bam-md5 \
+            --use-original-qualities
     done
 }
 
 # MAIN
 
-# pairedFastQsToUnmappedBAM
-# sleep 10
-# validateSam
-# sleep 10
-# parallelMapping
-# sleep 10
-# markDuplicates
-# sleep 10
-# sortAndFixTags
-# sleep 10
-# createSequenceGroupingTSV # needs to be done each reference update
-# sleep 10
-# parallelRecalibration
-# sleep 10
-# gatherBqsrReports
-# sleep 10
-# parallelApplyBqsr
-# sleep 10
-gatherBamFiles
-
-# To do:
-# GatherBamFiles
+pairedFastQsToUnmappedBAM
+sleep 1
+validateSam
+sleep 1
+parallelMapping
+sleep 1
+markDuplicates
+sleep 1
+sortAndFixTags
+sleep 1
+baseRecalibrator
+sleep 1
+applyBqsr
