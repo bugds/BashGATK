@@ -263,11 +263,11 @@ function applyBqsr {
 # validateSam
 # sleep 1
 parallelMapping
-sleep 1
-# markDuplicates
-# sleep 1
-# sortAndFixTags
-# sleep 1
-# baseRecalibrator
-# sleep 1
-# applyBqsr
+sleep 5
+markDuplicates
+sleep 5
+sortAndFixTags
+sleep 5
+baseRecalibrator
+sleep 5
+applyBqsr
