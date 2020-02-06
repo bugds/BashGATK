@@ -162,7 +162,7 @@ function parallelMapping {
     makeDirectory unmerged
     makeDirectory merged
     export -f samToFastqAndBwaMem
-    parallel samToFastqAndBwaMem ::: $files
+    parallel -j 5 samToFastqAndBwaMem ::: $files
 }
 
 function markDuplicates {
@@ -258,16 +258,16 @@ function applyBqsr {
 
 # MAIN
 
-pairedFastQsToUnmappedBAM
-sleep 1
-validateSam
-sleep 1
+# pairedFastQsToUnmappedBAM
+# sleep 1
+# validateSam
+# sleep 1
 parallelMapping
 sleep 1
-markDuplicates
-sleep 1
-sortAndFixTags
-sleep 1
-baseRecalibrator
-sleep 1
-applyBqsr
+# markDuplicates
+# sleep 1
+# sortAndFixTags
+# sleep 1
+# baseRecalibrator
+# sleep 1
+# applyBqsr
