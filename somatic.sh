@@ -1,5 +1,8 @@
 #!/bin/bash
 
+set -e
+set -o pipefail
+
 export inputFolder="$(realpath $1)/"
 export outputFolder="$(realpath $2)/"
 export platform=ILLUMINA
@@ -173,7 +176,7 @@ function markDuplicates {
 
     for bam in $files; do
         $gatk --java-options "-Dsamjdk.compression_level=${compressionLevel} ${javaOpt}" \
-        MarkDuplicates \
+          MarkDuplicates \
             --INPUT $bam \
             --OUTPUT ${outputFolder}duplicates_marked/$(basename -- ${bam}) \
             --METRICS_FILE ${outputFolder}duplicates_marked/$(basename -- ${bam}).mtrx \
@@ -196,7 +199,7 @@ function sortAndFixTags {
         output=$(echo $base | cut -f 1 -d '.')
 
         $gatk --java-options "-Dsamjdk.compression_level=${compressionLevel} ${javaOpt}" \
-        SortSam \
+          SortSam \
             --INPUT ${bam} \
             --OUTPUT /dev/stdout \
             --SORT_ORDER "coordinate" \
@@ -227,7 +230,7 @@ function baseRecalibrator {
         -R $refFasta \
         $inputFiles \
         --use-original-qualities \
-        -O ${outputFolder}temporary_files/recalibration_report_$runNumber.txt \
+        -O ${outputFolder}temporary_files/recalibration_report_${runNumber}.txt \
         --known-sites $dbSnpVcf \
         --known-sites $millisVcf \
         --known-sites $indelsVcf \
@@ -244,10 +247,10 @@ function applyBqsr {
         local bamName=$(basename -- ${bam})
         $gatk --java-options ${javaOpt} \
           ApplyBQSR \
-            -R ${refFasta} \
-            -I ${bam} \
+            -R $refFasta \
+            -I $bam \
             -O ${outputFolder}recalibrated/${bamName} \
-            ${intervals} \
+            -L $regions \
             -bqsr ${outputFolder}temporary_files/recalibration_report_$runNumber.txt \
             --static-quantized-quals 10 --static-quantized-quals 20 --static-quantized-quals 30 \
             --add-output-sam-program-record \
@@ -258,10 +261,10 @@ function applyBqsr {
 
 # MAIN
 
-# pairedFastQsToUnmappedBAM
-# sleep 1
-# validateSam
-# sleep 1
+pairedFastQsToUnmappedBAM
+sleep 5
+validateSam
+sleep 5
 parallelMapping
 sleep 5
 markDuplicates
