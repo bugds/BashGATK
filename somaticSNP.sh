@@ -9,9 +9,11 @@ export gatk=/opt/gatk-4.1.4.1/gatk
 
 export regions=/home/bioinfuser/NGS/Reference/intervals/2020_02_02/regions.bed
 export refFasta=/home/bioinfuser/NGS/Reference/hg38/hg38.fasta
+export refImg=/home/bioinfuser/NGS/Reference/hg38/hg38.fasta.img
 export refDict=/home/bioinfuser/NGS/Reference/hg38/hg38.dict
-export gnomad=/home/bioinfuser/NGS/Reference/hg38/Mutect2/gnomad.exomes.r2.1.1.sites.liftover_grch38.vcf.bgz
-export variantsForContamination=/home/bioinfuser/NGS/Reference/hg38/Mutect2/variants_for_contamination.vcf
+# gnomad needs to be taken after processing
+export gnomad=/home/bioinfuser/NGS/Reference/intervals/2020_02_02/additional/AFonly.vcf
+export variantsForContamination=/home/bioinfuser/NGS/Reference/intervals/2020_02_02/additional/variants_for_contamination.vcf
 
 export javaOpt="-Xms3000m"
 
@@ -28,7 +30,7 @@ function mutect2 {
     makeDirectory mutect2
 
     for bam in $files; do
-        local bamName = $(basename -- ${bam})
+        local bamName=$(basename -- ${bam})
         makeDirectory mutect2/${bamName}
 
         touch ${outputFolder}mutect2/${bamName}/bamout.bam
@@ -98,25 +100,79 @@ function mergePileupSummaries {
 
 }
 
+# End of merging functions
+
 function learnReadOrientationModel {
-    local files=${outputFolder}mutect2/*/f1r2.tar.gz
+    local files="${outputFolder}mutect2/*/f1r2.tar.gz"
     local inputFiles=$(printf -- "--INPUT %s " $files)
 
     $gatk --java-options "${javaOpt}" \
       LearnReadOrientationModel \
-        $inputFiles
-        -O artifact-priors.tar.gz
+        $inputFiles \
+        -O ${outputFolder}mutect2/artifact-priors.tar.gz
 }
 
 function calculateContamination {
+    local files="${outputFolder}mutect2/*/*.pileups.table"
+    local inputFiles=$(printf -- "--INPUT %s " $files)
+
     $gatk --java-options "${javaOpt}" \
       CalculateContamination 
-        -I ${outputFolder}mutect2/gathered.pileups.table \
-        -O contamination.table \
+        $inputFiles \
+        -O ${outputFolder}mutect2/contamination.table \
         --tumor-segmentation ${outputFolder}mutect2/segments.table
 }
 
+function filterMutectCalls {
+    local files=${outputFolder}mutect2/*/*.unfiltered.vcf
+
+    for vcf in $files; do
+        local output=$(echo ${vcf} | sed 's/unfiltered/filtered')
+        local stats=$(echo ${vcf} | sed 's/unfiltered.vcf/unfiltered.vcf.stats')
+
+        $gatk --java-options "${javaOpt}" \
+          FilterMutectCalls \
+            -V $vcf \
+            -R $refFasta \
+            -O $output \
+            --contamination-table ${outputFolder}mutect2/contamination.table \
+            --tumor-segmentation ${outputFolder}mutect2/segments.table \
+            --ob-priors ${outputFolder}mutect2/artifact-priors.tar.gz \
+    done
+}
+
+function filterAlignmentArtifacts {
+    local files="${outputFolder}recalibrated/*.bam"
+    # https://gatkforums.broadinstitute.org/gatk/discussion/24190/which-bam-to-give-filteralignmentartifacts
+
+    for bam in $files; do
+        local bamName=$(basename -- ${bam})
+        local vcf="${outputFolder}mutect2/${bamName}/${bamName}.filtered.vcf"
+        local output=$(echo ${vcf} | sed 's/filtered/filtered.artifacts')
+
+        $gatk --java-options "${javaOpt}" \
+          FilterAlignmentArtifacts \
+            -R $refFasta \
+            -V $vcf \
+            -I $bam \
+            --bwa-mem-index-image $refImg \
+            -O 
+    done
+}
+
+function annotateVep {
+
+}
+
+function annotateAnnovar {
+
+}
+
 mutect2
+learnReadOrientationModel
+calculateContamination
+filterMutectCalls
+fileterAlignmentArtifacts
 
 # There is no need to run any of these functions for all files
 # in the run:
