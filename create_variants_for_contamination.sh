@@ -22,6 +22,14 @@ export minimumAlleleFrequency=0.05
 
 export javaOpt="-Xms3000m"
 
+function makeDirectory {
+    local newDirectory=$1
+
+    if !( test -d "${newDirectory}/" ); then
+        mkdir "${newDirectory}/"
+    fi
+}
+
 function unzipGnomad {
     unzipped=$(echo ${gnomad} | sed 's/vcf.bgz/vcf')
 
@@ -39,7 +47,7 @@ function indexFeatureFile {
 
 # To take only variants in the interval
 function selectVariants {
-    mkdir $wd
+    makeDirectory $wd
 
     gatk --java-options "${javaOpt}" \
       SelectVariants \

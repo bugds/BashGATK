@@ -130,7 +130,7 @@ function samToFastqAndBwaMem {
         INTERLEAVE=true \
         NON_PF=true \
     | \
-    ${bwaCommandline} /dev/stdin - 2> >(tee ./somatic.sh_logs/${output}.bwa.stderr.log >&2) \
+    ${bwaCommandline} /dev/stdin - 2> >(tee ./processing.sh_logs/${output}.bwa.stderr.log >&2) \
     | \
     $samtools view -1 - > ${outputFolder}unmerged/${output}.bam
     

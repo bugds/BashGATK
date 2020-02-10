@@ -3,11 +3,10 @@
 set -e
 set -o pipefail
 
-export inputFolder="$(realpath $1)/"
-export outputFolder="$(realpath $2)/"
+export outputFolder="$(realpath $1)/"
 export gatk=/opt/gatk-4.1.4.1/gatk
 
-export regions=/home/bioinfuser/NGS/Reference/intervals/2020_02_02/regions.bed
+export regions=/home/bioinfuser/NGS/Reference/intervals/2020_02_02/regions.interval_list
 export refFasta=/home/bioinfuser/NGS/Reference/hg38/hg38.fasta
 export refImg=/home/bioinfuser/NGS/Reference/hg38/hg38.fasta.img
 export refDict=/home/bioinfuser/NGS/Reference/hg38/hg38.dict
@@ -30,7 +29,7 @@ function mutect2 {
     makeDirectory mutect2
 
     for bam in $files; do
-        local bamName=$(basename -- ${bam})
+        local bamName=$(basename -- ${bam} | cut -f 1 -d '.')
         makeDirectory mutect2/${bamName}
 
         touch ${outputFolder}mutect2/${bamName}/bamout.bam
@@ -38,20 +37,20 @@ function mutect2 {
 
         $gatk --java-options "${javaOpt}" \
           GetSampleName \
-            -R refFasta \
+            -R $refFasta \
             -I $bam \
             -O ${outputFolder}mutect2/${bamName}/${bamName}.txt \
             -encode
 
         $gatk --java-options "${javaOpt}" \
           Mutect2 \
-            -R refFasta \
+            -R $refFasta \
             -I $bam \
             -tumor 'cat ${outputFolder}mutect2/${bamName}/${bamName}.txt' \
             --germline-resource $gnomad \
             -L $regions \
             -O ${outputFolder}mutect2/${bamName}/${bamName}.unfiltered.vcf \
-            --bam-output bamout.bam \
+            --bam-output ${outputFolder}mutect2/${bamName}/${bamName}.bamout.bam \
             --f1r2-tar-gz f1r2.tar.gz
         
         $gatk --java-options "${javaOpt}" \
@@ -137,7 +136,7 @@ function filterMutectCalls {
             -O $output \
             --contamination-table ${outputFolder}mutect2/contamination.table \
             --tumor-segmentation ${outputFolder}mutect2/segments.table \
-            --ob-priors ${outputFolder}mutect2/artifact-priors.tar.gz \
+            --ob-priors ${outputFolder}mutect2/artifact-priors.tar.gz
     done
 }
 
@@ -156,17 +155,17 @@ function filterAlignmentArtifacts {
             -V $vcf \
             -I $bam \
             --bwa-mem-index-image $refImg \
-            -O 
+            -O $output
     done
 }
 
-function annotateVep {
+# function annotateVep {
 
-}
+# }
 
-function annotateAnnovar {
+# function annotateAnnovar {
 
-}
+# }
 
 mutect2
 learnReadOrientationModel
