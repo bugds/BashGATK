@@ -10,7 +10,6 @@ export regions=/home/bioinfuser/NGS/Reference/intervals/2020_02_02/regions.inter
 export refFasta=/home/bioinfuser/NGS/Reference/hg38/hg38.fasta
 export refImg=/home/bioinfuser/NGS/Reference/hg38/hg38.fasta.img
 export refDict=/home/bioinfuser/NGS/Reference/hg38/hg38.dict
-# gnomad needs to be taken after processing
 export gnomad=/home/bioinfuser/NGS/Reference/intervals/2020_02_02/additional/AFonly.vcf
 export variantsForContamination=/home/bioinfuser/NGS/Reference/intervals/2020_02_02/additional/variants_for_contamination.vcf
 
@@ -29,6 +28,7 @@ function mutect2 {
     makeDirectory mutect2
 
     for bam in $files; do
+        echo $bam
         local bamName=$(basename -- ${bam} | cut -f 1 -d '.')
         makeDirectory mutect2/${bamName}
 
@@ -51,11 +51,11 @@ function mutect2 {
             -L $regions \
             -O ${outputFolder}mutect2/${bamName}/${bamName}.unfiltered.vcf \
             --bam-output ${outputFolder}mutect2/${bamName}/${bamName}.bamout.bam \
-            --f1r2-tar-gz f1r2.tar.gz
+            --f1r2-tar-gz ${outputFolder}mutect2/${bamName}/f1r2.tar.gz
         
         $gatk --java-options "${javaOpt}" \
           GetPileupSummaries \
-            -R refFasta \
+            -R $refFasta \
             -I $bam \
             --interval-set-rule INTERSECTION -L $regions \
             -V $variantsForContamination \
@@ -103,7 +103,7 @@ function mergePileupSummaries {
 
 function learnReadOrientationModel {
     local files="${outputFolder}mutect2/*/f1r2.tar.gz"
-    local inputFiles=$(printf -- "--INPUT %s " $files)
+    local inputFiles=$(printf -- "-I %s " $files)
 
     $gatk --java-options "${javaOpt}" \
       LearnReadOrientationModel \
@@ -113,7 +113,7 @@ function learnReadOrientationModel {
 
 function calculateContamination {
     local files="${outputFolder}mutect2/*/*.pileups.table"
-    local inputFiles=$(printf -- "--INPUT %s " $files)
+    local inputFiles=$(printf -- "-I %s " $files)
 
     $gatk --java-options "${javaOpt}" \
       CalculateContamination 
@@ -168,9 +168,13 @@ function filterAlignmentArtifacts {
 # }
 
 mutect2
+sleep 5
 learnReadOrientationModel
+sleep 5
 calculateContamination
+sleep 5
 filterMutectCalls
+sleep 5
 fileterAlignmentArtifacts
 
 # There is no need to run any of these functions for all files
