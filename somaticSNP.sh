@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Multisample Mutect2 usage described here: 
+# https://github.com/broadinstitute/gatk/blob/master/scripts/mutect2_wdl/mutect2_multi_sample.wdl
+
 set -e
 set -o pipefail
 
@@ -89,18 +92,21 @@ function mergeBamOuts {
 
 function mergePileupSummaries {
     local files=${outputFolder}mutect2/*/*.pileups.table
-    local inputFiles=$(printf -- "--INPUT %s " $files)
+    local inputFiles=$(printf -- "-I %s " $files)
 
     $gatk --java-options "${javaOpt}" \
       GatherPileupSummaries \
-        --sequence-dictionary $refDict
-        $inputFiles
+        --sequence-dictionary $refDict \
+        $inputFiles \
         -O ${outputFolder}mutect2/gathered.pileups.table
 
 }
 
 # End of merging functions
 
+# By looking into "artifact-priors.tar.gz" we can see that
+# LearnReadOritentationModel defines samples correctly
+# if multiple files are at the input
 function learnReadOrientationModel {
     local files="${outputFolder}mutect2/*/f1r2.tar.gz"
     local inputFiles=$(printf -- "-I %s " $files)
@@ -113,29 +119,33 @@ function learnReadOrientationModel {
 
 function calculateContamination {
     local files="${outputFolder}mutect2/*/*.pileups.table"
-    local inputFiles=$(printf -- "-I %s " $files)
 
-    $gatk --java-options "${javaOpt}" \
-      CalculateContamination 
-        $inputFiles \
-        -O ${outputFolder}mutect2/contamination.table \
-        --tumor-segmentation ${outputFolder}mutect2/segments.table
+    for input in $files; do
+        local bamName=$(basename -- ${input} | cut -f 1 -d '.')
+
+        $gatk --java-options "${javaOpt}" \
+          CalculateContamination \
+            -I $input \
+            -O ${outputFolder}mutect2/${bamName}/${bamName}.contamination.table \
+            --tumor-segmentation ${outputFolder}mutect2/${bamName}/${bamName}.segments.table
+    done
 }
 
 function filterMutectCalls {
     local files=${outputFolder}mutect2/*/*.unfiltered.vcf
 
     for vcf in $files; do
-        local output=$(echo ${vcf} | sed 's/unfiltered/filtered')
-        local stats=$(echo ${vcf} | sed 's/unfiltered.vcf/unfiltered.vcf.stats')
+        local output=$(echo ${vcf} | sed "s/unfiltered/filtered/")
+        local stats=$(echo ${vcf} | sed "s/unfiltered.vcf/unfiltered.vcf.stats/")
+        local bamName=$(basename -- ${vcf} | cut -f 1 -d '.')
 
         $gatk --java-options "${javaOpt}" \
           FilterMutectCalls \
             -V $vcf \
             -R $refFasta \
             -O $output \
-            --contamination-table ${outputFolder}mutect2/contamination.table \
-            --tumor-segmentation ${outputFolder}mutect2/segments.table \
+            --contamination-table ${outputFolder}mutect2/${bamName}/${bamName}.contamination.table \
+            --tumor-segmentation ${outputFolder}mutect2/${bamName}/${bamName}.segments.table \
             --ob-priors ${outputFolder}mutect2/artifact-priors.tar.gz
     done
 }
@@ -147,7 +157,7 @@ function filterAlignmentArtifacts {
     for bam in $files; do
         local bamName=$(basename -- ${bam})
         local vcf="${outputFolder}mutect2/${bamName}/${bamName}.filtered.vcf"
-        local output=$(echo ${vcf} | sed 's/filtered/filtered.artifacts')
+        local output=$(echo ${vcf} | sed "s/filtered/filtered.artifacts/")
 
         $gatk --java-options "${javaOpt}" \
           FilterAlignmentArtifacts \
@@ -167,14 +177,14 @@ function filterAlignmentArtifacts {
 
 # }
 
-mutect2
-sleep 5
-learnReadOrientationModel
-sleep 5
-calculateContamination
-sleep 5
-filterMutectCalls
-sleep 5
+# mutect2
+# sleep 5
+# learnReadOrientationModel
+# sleep 5
+# calculateContamination
+# sleep 5
+# filterMutectCalls
+# sleep 5
 fileterAlignmentArtifacts
 
 # There is no need to run any of these functions for all files
