@@ -155,7 +155,7 @@ function filterAlignmentArtifacts {
     # https://gatkforums.broadinstitute.org/gatk/discussion/24190/which-bam-to-give-filteralignmentartifacts
 
     for bam in $files; do
-        local bamName=$(basename -- ${bam})
+        local bamName=$(basename -- ${bam} | cut -f 1 -d '.')
         local vcf="${outputFolder}mutect2/${bamName}/${bamName}.filtered.vcf"
         local output=$(echo ${vcf} | sed "s/filtered/filtered.artifacts/")
 
@@ -177,15 +177,15 @@ function filterAlignmentArtifacts {
 
 # }
 
-# mutect2
-# sleep 5
-# learnReadOrientationModel
-# sleep 5
-# calculateContamination
-# sleep 5
-# filterMutectCalls
-# sleep 5
-fileterAlignmentArtifacts
+mutect2
+sleep 5
+learnReadOrientationModel
+sleep 5
+calculateContamination
+sleep 5
+filterMutectCalls
+sleep 5
+filterAlignmentArtifacts
 
 # There is no need to run any of these functions for all files
 # in the run:
