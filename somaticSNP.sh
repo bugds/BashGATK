@@ -169,14 +169,6 @@ function filterAlignmentArtifacts {
     done
 }
 
-# function annotateVep {
-
-# }
-
-# function annotateAnnovar {
-
-# }
-
 mutect2
 sleep 5
 learnReadOrientationModel
