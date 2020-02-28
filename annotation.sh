@@ -4,10 +4,11 @@ export outputFolder="$(realpath $1)/"
 
 # function annotateAnnovar {
 
-# A) Gene-based annotation
-# As of now, I'm concerned this will not be done because VEP will do this work anyway
+# Gene-based
+# refseq
+# ensembl
 
-# B) Filter-based annotation
+# Filter-based
 
 # frequencies:
 # 1000g2015aug
@@ -26,7 +27,8 @@ export outputFolder="$(realpath $1)/"
 
 # disease-specific:
 # clinvar_20190305
-# cosmic70 (newer too?)
+# cosmic70
+# cosmic90
 # nci60
 
 # variant identifiers:

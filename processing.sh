@@ -6,7 +6,8 @@ set -o pipefail
 export inputFolder="$(realpath $1)/"
 export outputFolder="$(realpath $2)/"
 export platform=ILLUMINA
-export runNumber=$3
+# Since we have only one lane in MiSeq
+export lane=1
 export gatk=/opt/gatk-4.1.4.1/gatk
 export samtools=/opt/gatk4-data-processing/samtools-1.3.1/samtools
 export picard=/opt/gatk4-data-processing/picard-2.16.0/picard.jar
@@ -79,7 +80,7 @@ function fastqToSam {
         -F1 $forward \
         -F2 $reverse \
         -O "${outputFolder}unmapped/${name}.bam" \
-        -RG $runNumber \
+        -RG "rg${sample}:${lane}" \
         -SM $sample \
         -LB $library \
         -PL $platform
@@ -220,23 +221,23 @@ function sortAndFixTags {
 
 function baseRecalibrator {
     local files="${outputFolder}sorted/*.bam"
-    local inputFiles=$(printf -- "-I %s " $files)
     local javaOpt='-Xms4000m'
-    local bamName=$(basename -- ${bam} | cut -d "." -f 1)
-    makeDirectory temporary_files/${bamName}_recalibration_report
-    makeDirectory temporary_files/${bamName}_recalibration_report/chunks
-    local mark=$(echo $group[0] | cut -d ' ' -f 1)
+    makeDirectory temporary_files/recal_reports
 
-    $gatk --java-options ${javaOpt} \
-      BaseRecalibrator \
-        -R $refFasta \
-        $inputFiles \
-        --use-original-qualities \
-        -O ${outputFolder}temporary_files/recalibration_report_${runNumber}.txt \
-        --known-sites $dbSnpVcf \
-        --known-sites $millisVcf \
-        --known-sites $indelsVcf \
-        -L $regions
+    for bam in $files; do
+        local bamName=$(basename -- ${bam} | cut -d "." -f 1)
+        
+        $gatk --java-options ${javaOpt} \
+          BaseRecalibrator \
+            -R $refFasta \
+            -I $bam \
+            --use-original-qualities \
+            -O ${outputFolder}temporary_files/recal_reports/${bamName}.recal \
+            --known-sites $dbSnpVcf \
+            --known-sites $millisVcf \
+            --known-sites $indelsVcf \
+            -L $regions
+    done
 }
 
 function applyBqsr {
@@ -245,15 +246,18 @@ function applyBqsr {
     local javaOpt='-Xms3000m'
     export -f makeDirectory
     export -f applyBqsr
+
     for bam in $files; do
-        local bamName=$(basename -- ${bam})
+        local bamName=$(basename -- ${bam} | cut -d "." -f 1)
+
+
         $gatk --java-options ${javaOpt} \
           ApplyBQSR \
             -R $refFasta \
             -I $bam \
-            -O ${outputFolder}recalibrated/${bamName} \
+            -O ${outputFolder}recalibrated/${bamName}.bam \
             -L $regions \
-            -bqsr ${outputFolder}temporary_files/recalibration_report_$runNumber.txt \
+            -bqsr ${outputFolder}temporary_files/recal_reports/${bamName}.recal \
             --static-quantized-quals 10 --static-quantized-quals 20 --static-quantized-quals 30 \
             --add-output-sam-program-record \
             --create-output-bam-md5 \
