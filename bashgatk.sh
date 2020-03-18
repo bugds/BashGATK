@@ -5,6 +5,7 @@ set -o pipefail
 
 cmd=$1
 export outputFolder="$(realpath $2)/"
+export scriptsDirectory=/home/bioinfuser/NGS/Pipelines/scripts
 
 export gatk=/opt/gatk-4.1.5.0/gatk
 export samtools=/opt/gatk4-data-processing/samtools-1.3.1/samtools
@@ -15,11 +16,11 @@ export refFasta=/home/bioinfuser/NGS/Reference/hg38/hg38.fasta
 export refDict=/home/bioinfuser/NGS/Reference/hg38/hg38.dict
 
 if [ $cmd == 'proc' ]; then
-    echo '1'
+    bash ${scriptsDirectory}/parallelProcessing.sh
 elif [ $cmd == 'procWGS' ]; then
     echo '2'
 elif [ $cmd == 'somaSNP' ]; then
-    echo '3'
+    bash ${scriptsDirectory}/parallelSomaticSNP.sh
 elif [ $cmd == 'anno' ]; then
     echo '4'
 elif [ $cmd == 'btil' ]; then

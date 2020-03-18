@@ -3,7 +3,7 @@
 set -e
 set -o pipefail
 
-export inputFolder=${outputFolder}/fastq
+export inputFolder=${outputFolder}/fastq/
 export platform=ILLUMINA
 # Since we have only one lane in MiSeq
 export lane=1
@@ -55,7 +55,7 @@ function forwardToReverse {
     if test -f $reversePath; then
         reverse=$reversePath
     else
-        echo 'No reverse fastq file for ${forwardName}'
+        echo 'No reverse fastq file for '${forwardName}
         exit 1
     fi
 }
@@ -81,7 +81,6 @@ function fastqToSam {
 
 function pairedFastQsToUnmappedBAM {
     local files="${inputFolder}*"
-    makeDirectory unmapped
 
     for forward in $files; do
         getMetadata $forward
@@ -94,7 +93,6 @@ function pairedFastQsToUnmappedBAM {
 
 function validateSam {
     local files="${outputFolder}unmapped/*"
-    makeDirectory temporary_files
 
     for bam in $files; do
         gatk ValidateSamFile \
@@ -110,6 +108,13 @@ function validateSam {
             exit 1
         fi
     done
+}
+
+function parallelRun {  
+    local files=$2
+
+    export -f $1
+    parallel -j $parallelJobs $1 ::: $files
 }
 
 function samToFastqAndBwaMem {
@@ -155,121 +160,104 @@ function samToFastqAndBwaMem {
         --UNMAP_CONTAMINANT_READS true
 }
 
-function parallelMapping {  
-    local files="${outputFolder}unmapped/*"
-
-    makeDirectory unmerged
-    makeDirectory merged
-    export -f samToFastqAndBwaMem
-    parallel -j $parallelJobs samToFastqAndBwaMem ::: $files
-}
-
 function markDuplicates {
-    local files="${outputFolder}merged/*.bam"
-    local inputFiles=$(printf -- "--INPUT %s " $files)
     local javaOpt="-Xms4000m"
-    makeDirectory duplicates_marked
 
-    for bam in $files; do
-        $gatk --java-options "-Dsamjdk.compression_level=${compressionLevel} ${javaOpt}" \
-          MarkDuplicates \
-            --INPUT $bam \
-            --OUTPUT ${outputFolder}duplicates_marked/$(basename -- ${bam}) \
-            --METRICS_FILE ${outputFolder}duplicates_marked/$(basename -- ${bam}).mtrx \
-            --VALIDATION_STRINGENCY SILENT \
-            --OPTICAL_DUPLICATE_PIXEL_DISTANCE 2500 \
-            --SORTING_COLLECTION_SIZE_RATIO 0.25 \
-            --ASSUME_SORT_ORDER queryname \
-            --CREATE_MD5_FILE true
-    done
+    $gatk --java-options "-Dsamjdk.compression_level=${compressionLevel} ${javaOpt}" \
+      MarkDuplicates \
+        --INPUT $1 \
+        --OUTPUT ${outputFolder}duplicates_marked/$(basename -- ${1}) \
+        --METRICS_FILE ${outputFolder}duplicates_marked/$(basename -- ${1}).mtrx \
+        --VALIDATION_STRINGENCY SILENT \
+        --OPTICAL_DUPLICATE_PIXEL_DISTANCE 2500 \
+        --SORTING_COLLECTION_SIZE_RATIO 0.25 \
+        --ASSUME_SORT_ORDER queryname \
+        --CREATE_MD5_FILE true
 }
 
 function sortAndFixTags {
-    local files="${outputFolder}duplicates_marked/*.bam"
     local javaOpt="-Xms4000m"
     local javaOpt2="-Xms500m"
-    makeDirectory sorted
 
-    for bam in $files; do
-        base=$(basename -- "$bam")
-        output=$(echo $base | cut -f 1 -d '.')
+    base=$(basename -- "$1")
+    output=$(echo $base | cut -f 1 -d '.')
 
-        $gatk --java-options "-Dsamjdk.compression_level=${compressionLevel} ${javaOpt}" \
-          SortSam \
-            --INPUT ${bam} \
-            --OUTPUT /dev/stdout \
-            --SORT_ORDER "coordinate" \
-            --CREATE_INDEX false \
-            --CREATE_MD5_FILE false \
-        | \
-        $gatk --java-options "-Dsamjdk.compression_level=${compressionLevel} ${javaOpt2}" \
-          SetNmMdAndUqTags \
-            --INPUT /dev/stdin \
-            --OUTPUT ${outputFolder}sorted/${output}.bam \
-            --CREATE_INDEX true \
-            --CREATE_MD5_FILE true \
-            --REFERENCE_SEQUENCE ${refFasta}
-    done
+    $gatk --java-options "-Dsamjdk.compression_level=${compressionLevel} ${javaOpt}" \
+      SortSam \
+        --INPUT ${1} \
+        --OUTPUT /dev/stdout \
+        --SORT_ORDER "coordinate" \
+        --CREATE_INDEX false \
+        --CREATE_MD5_FILE false \
+    | \
+    $gatk --java-options "-Dsamjdk.compression_level=${compressionLevel} ${javaOpt2}" \
+      SetNmMdAndUqTags \
+        --INPUT /dev/stdin \
+        --OUTPUT ${outputFolder}sorted/${output}.bam \
+        --CREATE_INDEX true \
+        --CREATE_MD5_FILE true \
+        --REFERENCE_SEQUENCE ${refFasta}
 }
 
 function baseRecalibrator {
-    local files="${outputFolder}sorted/*.bam"
     local javaOpt='-Xms4000m'
-    makeDirectory temporary_files/recal_reports
+    local bamName=$(basename -- ${1} | cut -d "." -f 1)
 
-    for bam in $files; do
-        local bamName=$(basename -- ${bam} | cut -d "." -f 1)
-        
-        $gatk --java-options ${javaOpt} \
-          BaseRecalibrator \
-            -R $refFasta \
-            -I $bam \
-            --use-original-qualities \
-            -O ${outputFolder}temporary_files/recal_reports/${bamName}.recal \
-            --known-sites $dbSnpVcf \
-            --known-sites $millisVcf \
-            --known-sites $indelsVcf \
-            -L $regions
-    done
+    $gatk --java-options ${javaOpt} \
+      BaseRecalibrator \
+        -R $refFasta \
+        -I $1 \
+        --use-original-qualities \
+        -O ${outputFolder}temporary_files/recal_reports/${bamName}.recal \
+        --known-sites $dbSnpVcf \
+        --known-sites $millisVcf \
+        --known-sites $indelsVcf \
+        -L $regions
 }
 
 function applyBqsr {
-    local files="${outputFolder}sorted/*.bam"
-    makeDirectory recalibrated
     local javaOpt='-Xms3000m'
-    export -f makeDirectory
-    export -f applyBqsr
+    local bamName=$(basename -- ${1} | cut -d "." -f 1)
 
-    for bam in $files; do
-        local bamName=$(basename -- ${bam} | cut -d "." -f 1)
-
-
-        $gatk --java-options ${javaOpt} \
-          ApplyBQSR \
-            -R $refFasta \
-            -I $bam \
-            # USING -L OPTION SHOULD BE AVOIDED: MATE PAIRS DISAPPEAR
-            -O ${outputFolder}recalibrated/${bamName}.bam \
-            -bqsr ${outputFolder}temporary_files/recal_reports/${bamName}.recal \
-            --static-quantized-quals 10 --static-quantized-quals 20 --static-quantized-quals 30 \
-            --add-output-sam-program-record \
-            --create-output-bam-md5 \
-            --use-original-qualities
-    done
+    $gatk --java-options ${javaOpt} \
+      ApplyBQSR \
+        -R $refFasta \
+        -I $1 \
+        -O ${outputFolder}recalibrated/${bamName}.bam \
+        -bqsr ${outputFolder}temporary_files/recal_reports/${bamName}.recal \
+        --static-quantized-quals 10 --static-quantized-quals 20 --static-quantized-quals 30 \
+        --add-output-sam-program-record \
+        --create-output-bam-md5 \
+        --use-original-qualities
+# USING -L OPTION SHOULD BE AVOIDED: MATE PAIRS DISAPPEAR
 }
 
 # MAIN
 
+makeDirectory unmapped
 pairedFastQsToUnmappedBAM
-sleep 5
+sleep 1
+
+makeDirectory temporary_files
 validateSam
-sleep 5
-parallelMapping
-sleep 5
-markDuplicates
-sleep 5
-sortAndFixTags
-sleep 5
-baseRecalibrator
-sleep 5
-applyBqsr
+sleep 1
+
+makeDirectory unmerged
+makeDirectory merged
+parallelRun samToFastqAndBwaMem "${outputFolder}unmapped/*"
+sleep 1
+
+makeDirectory duplicates_marked
+parallelRun markDuplicates "${outputFolder}merged/*.bam"
+sleep 1
+
+makeDirectory sorted
+parallelRun sortAndFixTags "${outputFolder}duplicates_marked/*.bam"
+sleep 1
+
+makeDirectory temporary_files/recal_reports
+parallelRun baseRecalibrator "${outputFolder}sorted/*.bam"
+sleep 1
+
+makeDirectory recalibrated
+parallelRun applyBqsr "${outputFolder}sorted/*.bam"
