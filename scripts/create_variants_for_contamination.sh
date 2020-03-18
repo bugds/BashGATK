@@ -9,13 +9,10 @@ set -o pipefail
 # 2) this sites-only vcf further restricted to a given minimum allele frequency
 #   this is used as the variants_for_contamination input to mutect2.wdl
 
-export gatk=/opt/gatk-4.1.4.1/gatk
-
 export wd=/home/bioinfuser/NGS/Reference/intervals/2020_02_02/additional/
-export outputFolder=/home/bioinfuser/NGS/Reference/hg38/Mutect2/
+# export outputFolder=/home/bioinfuser/NGS/Reference/hg38/Mutect2/
 export regions=/home/bioinfuser/NGS/Reference/intervals/2020_02_02/regions.bed
-export refFasta=/home/bioinfuser/NGS/Reference/hg38/hg38.fasta
-export refDict=/home/bioinfuser/NGS/Reference/hg38/hg38.dict
+
 export gnomad=/home/bioinfuser/NGS/Reference/hg38/Mutect2/gnomad.exomes.r2.1.1.sites.liftover_grch38.vcf
 export variantsForContamination=/home/bioinfuser/NGS/Reference/hg38/Mutect2/variants_for_contamination.vcf
 export minimumAlleleFrequency=0.05

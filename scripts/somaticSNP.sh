@@ -7,14 +7,10 @@ set -e
 set -o pipefail
 
 export outputFolder="$(realpath $1)/"
-export gatk=/opt/gatk-4.1.4.1/gatk
 
 export regions=/home/bioinfuser/NGS/Reference/intervals/2020_02_02/regions.interval_list
-export refFasta=/home/bioinfuser/NGS/Reference/hg38/hg38.fasta
 export refImg=/home/bioinfuser/NGS/Reference/hg38/hg38.fasta.img
-export refDict=/home/bioinfuser/NGS/Reference/hg38/hg38.dict
-export gnomad=/home/bioinfuser/NGS/Reference/intervals/2020_02_02/additional/AFonly.vcf
-export variantsForContamination=/home/bioinfuser/NGS/Reference/intervals/2020_02_02/additional/variants_for_contamination.vcf
+
 
 export javaOpt="-Xms3000m"
 
@@ -169,15 +165,24 @@ function filterAlignmentArtifacts {
     done
 }
 
+function onlyPASS {
+    local files="${outputFolder}mutect2/*/*.filtered.vcf"
+
+    for file in $files; do
+        local outName=$(basename -- ${file} | cut -d "." -f 1)
+        awk -F '\t' '{if($0 ~ /\#/) print; else if($7 == "PASS") print}' $file > ${file}.pass.vcf
+    done
+}
+
 mutect2
-sleep 5
+sleep 1
 learnReadOrientationModel
-sleep 5
+sleep 1
 calculateContamination
-sleep 5
+sleep 1
 filterMutectCalls
-sleep 5
-filterAlignmentArtifacts
+sleep 1
+onlyPASS
 
 # There is no need to run any of these functions for all files
 # in the run:
