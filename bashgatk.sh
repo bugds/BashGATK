@@ -22,9 +22,11 @@ elif [ $cmd == 'procWGS' ]; then
 elif [ $cmd == 'somaSNP' ]; then
     bash ${scriptsDirectory}/parallelSomaticSNP.sh
 elif [ $cmd == 'anno' ]; then
-    echo '4'
+    bash ${scriptsDirectory}/annotation.sh
 elif [ $cmd == 'btil' ]; then
     echo '5'
 elif [ $cmd == 'cvfc' ]; then
     echo '6'
+elif [ $cmd == '2csv' ]; then
+    python3 ${scriptsDirectory}/goCsv.py $outputFolder
 fi

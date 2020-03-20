@@ -105,10 +105,12 @@ function mergePileupSummaries {
 # LearnReadOritentationModel defines samples correctly
 # if multiple files are at the input
 function learnReadOrientationModel {
+    local output=$(echo ${1} | sed "s/$(basename -- ${1})/artifact-priors.tar.gz/")
+
     $gatk --java-options "${javaOpt}" \
       LearnReadOrientationModel \
         -I $1 \
-        -O ${outputFolder}mutect2/artifact-priors.tar.gz
+        -O $output
 }
 
 function calculateContamination {
@@ -133,7 +135,7 @@ function filterMutectCalls {
         -O $output \
         --contamination-table ${outputFolder}mutect2/${bamName}/${bamName}.contamination.table \
         --tumor-segmentation ${outputFolder}mutect2/${bamName}/${bamName}.segments.table \
-        --ob-priors ${outputFolder}mutect2/artifact-priors.tar.gz
+        --ob-priors ${outputFolder}mutect2/${bamName}/artifact-priors.tar.gz
 }
 
 function filterAlignmentArtifacts {
