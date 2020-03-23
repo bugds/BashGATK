@@ -41,10 +41,17 @@ function annotateVep {
         -o ${outputFolder}/annotation/${1}_vep.vcf
 }
 
+function onlyPASS {
+    local file=${outputFolder}/annotation/${1}_vep.vcf
+
+    awk -F '\t' '{if($0 ~ /\#/) print; else if($7 == "PASS") print}' $file > ${file}.pass.vcf
+}
+
 makeDirectory annotation
 
 for file in ${inputFolder}/*/*.filtered.vcf; do
     base=$(basename -- $file)
     annotateAnnovar $file $base
     annotateVep $base
+    onlyPASS $base
 done

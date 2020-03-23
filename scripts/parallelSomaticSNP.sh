@@ -157,15 +157,6 @@ function filterAlignmentArtifacts {
     done
 }
 
-function onlyPASS {
-    local files="${outputFolder}mutect2/*/*.filtered.vcf"
-
-    for file in $files; do
-        local outName=$(basename -- ${file} | cut -d "." -f 1)
-        awk -F '\t' '{if($0 ~ /\#/) print; else if($7 == "PASS") print}' $file > ${file}.pass.vcf
-    done
-}
-
 makeDirectory mutect2
 export -f makeDirectory
 parallelRun mutect2 "${outputFolder}recalibrated/*.bam"
@@ -179,8 +170,6 @@ sleep 1
 
 parallelRun filterMutectCalls "${outputFolder}mutect2/*/*.unfiltered.vcf"
 sleep 1
-
-onlyPASS
 
 # There is no need to run any of these functions for all files
 # in the run:

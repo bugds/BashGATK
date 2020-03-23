@@ -18,15 +18,15 @@ export refDict=/home/bioinfuser/NGS/Reference/hg38/hg38.dict
 if [ $cmd == 'proc' ]; then
     bash ${scriptsDirectory}/parallelProcessing.sh
 elif [ $cmd == 'procWGS' ]; then
-    echo '2'
+    echo 'procWGS not implemented!'
 elif [ $cmd == 'somaSNP' ]; then
     bash ${scriptsDirectory}/parallelSomaticSNP.sh
 elif [ $cmd == 'anno' ]; then
     bash ${scriptsDirectory}/annotation.sh
 elif [ $cmd == 'btil' ]; then
-    echo '5'
+    echo 'btil not implemented!'
 elif [ $cmd == 'cvfc' ]; then
-    echo '6'
+    echo 'cvfc not implemented!'
 elif [ $cmd == '2csv' ]; then
     python3 ${scriptsDirectory}/goCsv.py $outputFolder
 fi
