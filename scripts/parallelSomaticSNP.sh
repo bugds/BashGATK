@@ -169,7 +169,6 @@ parallelRun calculateContamination "${outputFolder}mutect2/*/*.pileups.table"
 sleep 1
 
 parallelRun filterMutectCalls "${outputFolder}mutect2/*/*.unfiltered.vcf"
-sleep 1
 
 # There is no need to run any of these functions for all files
 # in the run:
