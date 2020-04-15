@@ -11,7 +11,7 @@ set -o pipefail
 
 export wd=/home/bioinfuser/NGS/Reference/intervals/2020_02_02/additional/
 # export outputFolder=/home/bioinfuser/NGS/Reference/hg38/Mutect2/
-export regions=/home/bioinfuser/NGS/Reference/intervals/2020_02_02/regions.bed
+export regions=/home/bioinfuser/NGS/Reference/intervals/2020_02_02/capture_targets.bed
 
 export gnomad=/home/bioinfuser/NGS/Reference/hg38/Mutect2/gnomad.exomes.r2.1.1.sites.liftover_grch38.vcf
 export variantsForContamination=/home/bioinfuser/NGS/Reference/hg38/Mutect2/variants_for_contamination.vcf

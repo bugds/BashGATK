@@ -24,9 +24,9 @@ elif [ $cmd == 'somaSNP' ]; then
 elif [ $cmd == 'anno' ]; then
     bash ${scriptsDirectory}/annotation.sh
 elif [ $cmd == 'btil' ]; then
-    echo 'btil not implemented!'
+    bash ${scriptsDirectory}/bed_to_interval_list.sh
 elif [ $cmd == 'cvfc' ]; then
-    echo 'cvfc not implemented!'
+    bash ${scriptsDirectory}/create_variants_for_contamination.sh
 elif [ $cmd == '2csv' ]; then
     python3 ${scriptsDirectory}/goCsv.py $outputFolder
 fi

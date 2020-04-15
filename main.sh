@@ -1,6 +1,9 @@
 #!/bin/bash
 
-./bashgatk.sh proc ../Data/2019_02_18/
-./bashgatk.sh somaSNP ../Data/2019_02_18/
-./bashgatk.sh anno ../Data/2019_02_18/
-./bashgatk.sh 2csv ../Data/2019_02_18/
+set -e
+set -o pipefail
+
+# ./bashgatk.sh proc $1
+./bashgatk.sh somaSNP $1
+./bashgatk.sh anno $1
+# ./bashgatk.sh 2csv $1

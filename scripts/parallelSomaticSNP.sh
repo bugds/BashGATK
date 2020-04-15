@@ -6,10 +6,10 @@
 set -e
 set -o pipefail
 
-export regions=/home/bioinfuser/NGS/Reference/intervals/2020_02_02/regions.interval_list
+export regions=/home/bioinfuser/NGS/Reference/intervals/2020_02_02/capture_targets.interval_list
 export refImg=/home/bioinfuser/NGS/Reference/hg38/hg38.fasta.img
 export gnomad=/home/bioinfuser/NGS/Reference/intervals/2020_02_02/additional/AFonly.vcf
-export variantsForContamination=/home/bioinfuser/NGS/Reference/hg38/Mutect2/variants_for_contamination.vcf
+export variantsForContamination=/home/bioinfuser/NGS/Reference/intervals/2020_02_02/additional/variants_for_contamination.vcf
 export parallelJobs=5
 
 export javaOpt="-Xms3000m"
