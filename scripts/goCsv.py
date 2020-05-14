@@ -6,10 +6,12 @@ wd = os.path.abspath(sys.argv[1])
 global innerDelimeter
 global outerDelimeter
 global extensionFilter
+global outputName
 
 innerDelimeter = ','
 outerDelimeter = '\t'
-extensionFilter = 'vep.vcf'
+extensionFilter = 'vep.vcf.pass.vcf'
+outputName = '/combined_passed.csv'
 
 def lineListCheck(someList, filename):
     if len(someList) == 1:
@@ -128,7 +130,7 @@ def writeToCsv(varDict, headerDone, csvFile, delimeter=outerDelimeter):
 def main():
     headerDone = False
     
-    with open(wd + '/combined.csv', 'w') as csvFile:
+    with open(wd + outputName, 'w') as csvFile:
         for filename in os.listdir(wd + '/annotation'):
                 if filename.endswith(extensionFilter):
                     formatList, annoList, vepList, headerList, dataLines = getData(wd, filename)

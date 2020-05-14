@@ -32,8 +32,11 @@ function haplotypeCaller {
         -I $1 \
         -L $regions \
         -O ${outputFolder}haplotype_caller/${bamName}.vcf \
-        # -contamination \ ????????????????????/
-        -G StandardAnnotation -G AS_StandardAnnotation -G StandardHCAnnotation
+        -ERC GVCF \
+        -contamination 0 \
+        -G StandardAnnotation \
+        -G AS_StandardAnnotation \
+        -G StandardHCAnnotation
 }
 
 makeDirectory haplotype_caller

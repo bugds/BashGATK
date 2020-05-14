@@ -19,7 +19,7 @@ export indelsVcfIdx=/home/bioinfuser/NGS/Reference/hg38/known_indels.hg38.vcf.gz
 export bwaVersion="$($bwa 2>&1 | grep -e '^Version' | sed 's/Version: //')"
 export bwaCommandline="$bwa mem -K 100000000 -p -v 3 -t 16 -Y $refFasta"
 export compressionLevel=5
-export parallelJobs=5
+export parallelJobs=3
 
 # USE THESE VARIABLES WITH $ ONLY
 

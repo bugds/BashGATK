@@ -12,9 +12,9 @@ set -o pipefail
 export wd=/home/bioinfuser/NGS/Reference/intervals/2020_02_02/additional/
 # export outputFolder=/home/bioinfuser/NGS/Reference/hg38/Mutect2/
 export regions=/home/bioinfuser/NGS/Reference/intervals/2020_02_02/capture_targets.bed
+# export regions=/home/bioinfuser/NGS/Reference/intervals/2020_01_01/regions.bed
 
-export gnomad=/home/bioinfuser/NGS/Reference/hg38/Mutect2/gnomad.exomes.r2.1.1.sites.liftover_grch38.vcf
-export variantsForContamination=/home/bioinfuser/NGS/Reference/hg38/Mutect2/variants_for_contamination.vcf
+export gnomad=/home/bioinfuser/NGS/Reference/hg38/gnomad/gnomad.exomes.r2.1.1.sites.liftover_grch38.vcf
 export minimumAlleleFrequency=0.05
 
 export javaOpt="-Xms3000m"
