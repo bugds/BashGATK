@@ -22,17 +22,17 @@ elif [ $cmd == 'procWGS' ]; then
 elif [ $cmd == 'somaSNP' ]; then
     bash ${scriptsDirectory}/parallelSomaticSNP.sh
 elif [ $cmd == 'germSNP' ]; then
-    bash ${scriptsDirectory}/parallelGermlineSNP.sh
+    echo 'germSNP not implemented!'
+elif [ $cmd == 'deep' ]; then
+    bash ${scriptsDirectory}/deepvariant.sh
 elif [ $cmd == 'anno' ]; then
     bash ${scriptsDirectory}/annotation.sh
+elif [ $cmd == '2csv' ]; then
+    python3 ${scriptsDirectory}/goCsv.py $outputFolder
 elif [ $cmd == 'btil' ]; then
     bash ${scriptsDirectory}/bed_to_interval_list.sh
 elif [ $cmd == 'cvfc' ]; then
     bash ${scriptsDirectory}/create_variants_for_contamination.sh
-elif [ $cmd == '2csv' ]; then
-    python3 ${scriptsDirectory}/goCsv.py $outputFolder
 elif [ $cmd == 'cnvk' ]; then
     bash ${scriptsDirectory}/run_cnvkit.sh
-elif [ $cmd == 'deep' ]; then
-    bash ${scriptsDirectory}/deepvariant.sh
 fi
