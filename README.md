@@ -38,21 +38,35 @@ Converts to unmapped .bam files paired .fastq files in the following format:
 
 #### somaSNP
 Uses *parallelSomaticSNP.sh*.
+- mutect2
+- learnReadOrientationModel
+- calculateContamination
+- filterMutectCalls
 
 #### deep
 Uses *deepvariant.sh*.
+Runs deepvariant in a Docker container
 
 #### anno
 Uses *annotation.sh*.
+- ANNOVAR
+- VEP
+- Filtering to get only *PASS*ed variants
 
 #### 2csv
 Uses *goCsv.py*.
+Converts vcf to human-readable csv format.
 
 #### btil
 Uses *bed_to_interval_list.sh*.
+Converts .bed file (capture targets) to interval list.
 
 #### cvfc
 Uses *create_variants_for_contamination.sh*.
+Given a gnomAD .vcf file, produces files for mutect2:
+- sites-only .vcf file where the only *INFO* field is allele frequency (AF),
+- the same file restricted to a given minimum allele frequency.
 
 #### cnvk
 Uses *run_cnvkit.sh*.
+Runs CNVKit to derive CNV information from targeted NGS run.
