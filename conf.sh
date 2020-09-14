@@ -20,7 +20,7 @@ if [ $command == 'proc' ]; then
     # parallelProcessing.sh
     export fastqc='/opt/FastQC/fastqc'
     export trimmomatic='java -jar /opt/Trimmomatic-0.39/trimmomatic-0.39.jar'
-    export trimCommandLine='ILLUMINACLIP:/home/bioinfuser/NGS/Reference/adapters/TruSeq3-PE.fa:2:30:10'
+    export trimCommandLine='ILLUMINACLIP:/home/bioinfuser/NGS/Reference/adapters/TruSeq3-PE-2.fa:2:30:10'
     export inputFolder=${outputFolder}/fastq/
     export regions=/home/bioinfuser/NGS/Reference/intervals/2020_02_02/capture_targets.bed
     export bwaVersion="$($bwa 2>&1 | grep -e '^Version' | sed 's/Version: //')"
