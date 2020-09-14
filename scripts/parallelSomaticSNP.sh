@@ -116,9 +116,6 @@ function calculateContamination {
 }
 
 function filterMutectCalls {
-    # https://github.com/bcbio/bcbio-nextgen/issues/2957
-    # https://gatk.broadinstitute.org/hc/en-us/articles/360036465772-FilterMutectCalls
-    
     local output=$(echo ${1} | sed "s/unfiltered/filtered/")
     local stats=$(echo ${1} | sed "s/unfiltered.vcf/unfiltered.vcf.stats/")
     local bamName=$(basename -- ${1} | cut -f 1 -d '.')
@@ -130,8 +127,7 @@ function filterMutectCalls {
         -O $output \
         --contamination-table ${outputFolder}mutect2/${bamName}/${bamName}.contamination.table \
         --tumor-segmentation ${outputFolder}mutect2/${bamName}/${bamName}.segments.table \
-        --ob-priors ${outputFolder}mutect2/${bamName}/artifact-priors.tar.gz \
-        --max-events-in-region 4
+        --ob-priors ${outputFolder}mutect2/${bamName}/artifact-priors.tar.gz
 }
 
 function filterAlignmentArtifacts {

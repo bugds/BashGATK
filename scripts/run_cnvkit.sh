@@ -121,14 +121,9 @@ function cnvKitCall {
             --center median \
             --filter ci \
             -v $outputFolder/deepvariant/$base.baf.vcf \
-<<<<<<< HEAD
             -o $outputFolder/cnvkit/pathologic/$base.vcf.cns \
             --purity $(< $outputFolder/doublePurity/$base.txt)
             #--purity $(cat $outputFolder/purity/$base.txt)
-=======
-            -o $outputFolder/cnvkit/pathologic/$base.vcf.cns
-            #--purity $(cat $outputFolder/purity/$base.txt) \
->>>>>>> 9e996baaa2d57bfaad090b553cb8fe9a6ae84bea
             #--purity $(cat $outputFolder/doublePurity/$base.txt) \
             
         $cnvkit scatter \
