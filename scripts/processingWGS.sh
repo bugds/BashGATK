@@ -3,22 +3,6 @@
 set -e
 set -o pipefail
 
-export inputFolder=${outputFolder}/fastq
-export platform=ILLUMINA
-
-export dbSnpVcf=/home/bioinfuser/NGS/Reference/hg38/dbsnp138.vcf
-export dbSnpVcfIdx=/home/bioinfuser/NGS/Reference/hg38/dbsnp138.vcf.idx
-export millisVcf=/home/bioinfuser/NGS/Reference/hg38/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz
-export millisVcfIdx=/home/bioinfuser/NGS/Reference/hg38/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz.tbi
-export indelsVcf=/home/bioinfuser/NGS/Reference/hg38/known_indels.hg38.vcf.gz
-export indelsVcfIdx=/home/bioinfuser/NGS/Reference/hg38/known_indels.hg38.vcf.gz.tbi
-
-export bwaVersion="$($bwa 2>&1 | grep -e '^Version' | sed 's/Version: //')"
-export bwaCommandline="$bwa mem -K 100000000 -p -v 3 -t 16 -Y $refFasta"
-export compressionLevel=5
-
-# USE THESE VARIABLES WITH $ ONLY
-
 function getMetadata {
     filename=$(basename -- $1)
     
@@ -371,27 +355,27 @@ function gatherBamFiles {
 
 # MAIN
 
-# pairedFastQsToUnmappedBAM
-# sleep 10
-# validateSam
-# sleep 10
-# parallelMapping
-# sleep 10
-# markDuplicates
-# sleep 10
-# sortAndFixTags
-# sleep 10
-# createSequenceGroupingTSV # needs to be done each reference update
-# sleep 10
-# parallelRecalibration
-# sleep 10
-# gatherBqsrReports
-# sleep 10
-# parallelApplyBqsr
-# sleep 10
-# gatherBamFiles
+pairedFastQsToUnmappedBAM
+sleep 10
+#validateSam
+#sleep 10
+#parallelMapping
+#sleep 10
+#markDuplicates
+#sleep 10
+#sortAndFixTags
+#sleep 10
+#createSequenceGroupingTSV # needs to be done each reference update
+#sleep 10
+#parallelRecalibration
+#sleep 10
+#gatherBqsrReports
+#sleep 10
+#parallelApplyBqsr
+#sleep 10
+#gatherBamFiles
 
-parallelRecalibration
+#parallelRecalibration
 
 # To do:
 # GatherBamFiles

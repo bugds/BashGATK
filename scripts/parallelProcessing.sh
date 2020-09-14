@@ -3,26 +3,6 @@
 set -e
 set -o pipefail
 
-export inputFolder=${outputFolder}/fastq/
-export platform=ILLUMINA
-# Since we have only one lane in MiSeq
-export lane=1
-
-export regions=/home/bioinfuser/NGS/Reference/intervals/2020_02_02/capture_targets.bed
-export dbSnpVcf=/home/bioinfuser/NGS/Reference/hg38/dbsnp138.vcf
-export dbSnpVcfIdx=/home/bioinfuser/NGS/Reference/hg38/dbsnp138.vcf.idx
-export millisVcf=/home/bioinfuser/NGS/Reference/hg38/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz
-export millisVcfIdx=/home/bioinfuser/NGS/Reference/hg38/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz.tbi
-export indelsVcf=/home/bioinfuser/NGS/Reference/hg38/known_indels.hg38.vcf.gz
-export indelsVcfIdx=/home/bioinfuser/NGS/Reference/hg38/known_indels.hg38.vcf.gz.tbi
-
-export bwaVersion="$($bwa 2>&1 | grep -e '^Version' | sed 's/Version: //')"
-export bwaCommandline="$bwa mem -K 100000000 -p -v 3 -t 16 -Y $refFasta"
-export compressionLevel=5
-export parallelJobs=3
-
-# USE THESE VARIABLES WITH $ ONLY
-
 function getMetadata {
     filename=$(basename -- $1)
     
@@ -68,6 +48,32 @@ function makeDirectory {
     fi
 }
 
+function fastqQualityControl {
+    local files="${inputFolder}*"
+    
+    $fastqc $files -o "${outputFolder}/$1"
+}
+
+function trimFastq {
+    local files="${inputFolder}*"
+
+    for forward in $files; do
+        getMetadata $forward
+        if $direction; then
+            forwardToReverse $forward
+            $trimmomatic PE \
+                $forward \
+                $reverse \
+                "${outputFolder}trimmed/$(basename -- $forward)" \
+                "${outputFolder}unpaired/$(basename -- $forward)" \
+                "${outputFolder}trimmed/$(basename -- $reverse)" \
+                "${outputFolder}unpaired/$(basename -- $reverse)" \
+                $trimCommandLine
+        fi
+    done
+    $trimmomatic PE 
+}
+
 function fastqToSam {
     gatk FastqToSam \
         -F1 $forward \
@@ -80,7 +86,7 @@ function fastqToSam {
 }
 
 function pairedFastQsToUnmappedBAM {
-    local files="${inputFolder}*"
+    local files="${outputFolder}trimmed/*"
 
     for forward in $files; do
         getMetadata $forward
@@ -234,30 +240,41 @@ function applyBqsr {
 
 # MAIN
 
-makeDirectory unmapped
-pairedFastQsToUnmappedBAM
+#makeDirectory qc_1
+#fastqQualityControl qc_1
+
+makeDirectory trimmed
+makeDirectory unpaired
+trimFastq
 sleep 1
 
-makeDirectory temporary_files
-validateSam
-sleep 1
+#makeDirectory qc_2
+#fastqQualityControl qc_2
 
-makeDirectory unmerged
-makeDirectory merged
-parallelRun samToFastqAndBwaMem "${outputFolder}unmapped/*"
-sleep 1
+#makeDirectory unmapped
+#pairedFastQsToUnmappedBAM
+#sleep 1
 
-makeDirectory duplicates_marked
-parallelRun markDuplicates "${outputFolder}merged/*.bam"
-sleep 1
+#makeDirectory temporary_files
+#validateSam
+#sleep 1
 
-makeDirectory sorted
-parallelRun sortAndFixTags "${outputFolder}duplicates_marked/*.bam"
-sleep 1
+#makeDirectory unmerged
+#makeDirectory merged
+#parallelRun samToFastqAndBwaMem "${outputFolder}unmapped/*"
+#sleep 1
 
-makeDirectory temporary_files/recal_reports
-parallelRun baseRecalibrator "${outputFolder}sorted/*.bam"
-sleep 1
+#makeDirectory duplicates_marked
+#parallelRun markDuplicates "${outputFolder}merged/*.bam"
+#sleep 1
 
-makeDirectory recalibrated
-parallelRun applyBqsr "${outputFolder}sorted/*.bam"
+#makeDirectory sorted
+#parallelRun sortAndFixTags "${outputFolder}duplicates_marked/*.bam"
+#sleep 1
+
+#makeDirectory temporary_files/recal_reports
+#parallelRun baseRecalibrator "${outputFolder}sorted/*.bam"
+#sleep 1
+
+#makeDirectory recalibrated
+#parallelRun applyBqsr "${outputFolder}sorted/*.bam"

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-export regions=/home/bioinfuser/NGS/Reference/intervals/2020_02_02/capture_targets.bed
-# export outputFolder=/home/bioinfuser/NGS/Reference/intervals/2020_02_02/
+set -e
+set -o pipefail
 
 java -jar $picard \
   BedToIntervalList \

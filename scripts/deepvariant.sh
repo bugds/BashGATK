@@ -13,13 +13,6 @@ set -o pipefail
 
 # Maybe get pisces, and get results of these 3 running through SURVIVOR of some kind
 
-export numCpu=16
-export regions=/home/bioinfuser/NGS/Reference/intervals/2020_02_02/capture_targets.bed
-export binVersion='0.10.0'
-export refFolder=/home/bioinfuser/NGS/Reference/
-export refFastaPathPart=hg38/hg38.fasta
-export regionsPathPart=intervals/2020_02_02/cnvkit_targets.bed
-
 function makeDirectory {
     local newDirectory=$1
 

@@ -3,16 +3,6 @@
 set -e
 set -o pipefail
 
-export cnvkit='python3 /home/bioinfuser/NGS/Software/cnvkit/cnvkit.py'
-export regions='/home/bioinfuser/NGS/Reference/intervals/2020_02_02/cnvkit_targets.bed'
-export antitarget='/home/bioinfuser/NGS/Reference/intervals/2020_02_02/cnvkit_antitargets.bed'
-export mappable='/home/bioinfuser/NGS/Reference/hg38/access-hg38.bed'
-export refFlat='/home/bioinfuser/NGS/Reference/hg38/hg38.refFlat.txt'
-export AFonly='/home/bioinfuser/NGS/Reference/intervals/2020_02_02/additional/AFonly.vcf'
-export LC_NUMERIC='en_US.UTF-8'
-
-export javaOpt="-Xms3000m"
-
 function makeDirectory {
     local newDirectory=$1
 
@@ -123,14 +113,18 @@ function cnvKitCall {
             $outputFolder/cnvkit/pathologic/$base.cnr \
             -s $outputFolder/cnvkit/pathologic/$base.cns \
             --ci
+           
+        echo $(< $outputFolder/purity/$base.txt)
             
         $cnvkit call \
             $outputFolder/cnvkit/pathologic/$base.segmetrics.cns \
             --center median \
             --filter ci \
             -v $outputFolder/deepvariant/$base.baf.vcf \
-            -o $outputFolder/cnvkit/pathologic/$base.vcf.cns
-            #--purity 0.9 \
+            -o $outputFolder/cnvkit/pathologic/$base.vcf.cns \
+            --purity $(< $outputFolder/doublePurity/$base.txt)
+            #--purity $(cat $outputFolder/purity/$base.txt)
+            #--purity $(cat $outputFolder/doublePurity/$base.txt) \
             
         $cnvkit scatter \
             $outputFolder/cnvkit/pathologic/$base.cnr \
@@ -140,14 +134,13 @@ function cnvKitCall {
 }
 
 
-makeDirectory cnvkit
-makeDirectory cnvkit/normal
-makeDirectory cnvkit/pathologic
+#makeDirectory cnvkit
+#makeDirectory cnvkit/normal
+#makeDirectory cnvkit/pathologic
 
 #putTimestamp
 #selectGermlineVcf
-
-cnvKitAutobin
-cnvKitCoverage
-cnvKitReference
+#cnvKitAutobin
+#cnvKitCoverage
+#cnvKitReference
 cnvKitCall

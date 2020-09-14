@@ -3,11 +3,6 @@
 set -e
 set -o pipefail
 
-export regions=/home/bioinfuser/NGS/Reference/intervals/2020_02_02/capture_targets.interval_list
-export parallelJobs=5
-
-export javaOpt="-Xms3000m"
-
 function makeDirectory {
     local newDirectory=$1
 

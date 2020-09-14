@@ -1,12 +1,5 @@
-export vep=/home/bioinfuser/NGS/Software/ensembl-vep/vep
-export fasta=/home/bioinfuser/.vep/homo_sapiens/99_GRCh38/Homo_sapiens.GRCh38.dna.toplevel.fa.gz
-export inputFolder=${outputFolder}/mutect2/
-export annovar=/home/bioinfuser/NGS/Software/annovar/table_annovar.pl
-export annovarDb=/home/bioinfuser/NGS/Software/annovar/humandb/
-export buildVer=hg38
-export protocol='refGene,ensGene,gnomad211_exome,gnomad30_genome,dbnsfp33a,dbscsnv11,clinvar_20190305,cosmic90_coding,cosmic90_noncoding,avsnp150'
-export operation='g,g,f,f,f,f,f,f,f,f'
-export xreffile=/home/bioinfuser/NGS/Software/annovar/example/gene_fullxref.txt
+set -e
+set -o pipefail
 
 function makeDirectory {
     local newDirectory=$1

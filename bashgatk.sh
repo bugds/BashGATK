@@ -3,36 +3,31 @@
 set -e
 set -o pipefail
 
-cmd=$1
+export command=$1
 export outputFolder="$(realpath $2)/"
-export scriptsDirectory=/home/bioinfuser/NGS/Pipelines/scripts
 
-export gatk=/opt/gatk-4.1.5.0/gatk
-export samtools=/opt/gatk4-data-processing/samtools-1.3.1/samtools
-export picard=/opt/gatk4-data-processing/picard-2.16.0/picard.jar
-export bwa=/opt/gatk4-data-processing/bwa-0.7.15/bwa
+source ./conf.sh
 
-export refFasta=/home/bioinfuser/NGS/Reference/hg38/hg38.fasta
-export refDict=/home/bioinfuser/NGS/Reference/hg38/hg38.dict
+echo ${scriptsDirectory}
 
-if [ $cmd == 'proc' ]; then
+if [ $command == 'proc' ]; then
     bash ${scriptsDirectory}/parallelProcessing.sh
-elif [ $cmd == 'procWGS' ]; then
-    echo 'procWGS not implemented!'
-elif [ $cmd == 'somaSNP' ]; then
+elif [ $command == 'procWGS' ]; then
+    bash ${scriptsDirectory}/processingWGS.sh
+elif [ $command == 'somaSNP' ]; then
     bash ${scriptsDirectory}/parallelSomaticSNP.sh
-elif [ $cmd == 'germSNP' ]; then
+elif [ $command == 'germSNP' ]; then
     bash ${scriptsDirectory}/parallelGermlineSNP.sh
-elif [ $cmd == 'anno' ]; then
+elif [ $command == 'anno' ]; then
     bash ${scriptsDirectory}/annotation.sh
-elif [ $cmd == 'btil' ]; then
+elif [ $command == 'btil' ]; then
     bash ${scriptsDirectory}/bed_to_interval_list.sh
-elif [ $cmd == 'cvfc' ]; then
+elif [ $command == 'cvfc' ]; then
     bash ${scriptsDirectory}/create_variants_for_contamination.sh
-elif [ $cmd == '2csv' ]; then
+elif [ $command == '2csv' ]; then
     python3 ${scriptsDirectory}/goCsv.py $outputFolder
-elif [ $cmd == 'cnvk' ]; then
+elif [ $command == 'cnvk' ]; then
     bash ${scriptsDirectory}/run_cnvkit.sh
-elif [ $cmd == 'deep' ]; then
+elif [ $command == 'deep' ]; then
     bash ${scriptsDirectory}/deepvariant.sh
 fi
