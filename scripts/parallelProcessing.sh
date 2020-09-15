@@ -49,9 +49,7 @@ function makeDirectory {
 }
 
 function fastqQualityControl {
-    local files="${inputFolder}*"
-    
-    $fastqc $files -o "${outputFolder}/$1"
+    $fastqc $1 -o $2
 }
 
 function trimFastq {
@@ -71,7 +69,6 @@ function trimFastq {
                 $trimCommandLine
         fi
     done
-    $trimmomatic PE 
 }
 
 function fastqToSam {
@@ -240,41 +237,41 @@ function applyBqsr {
 
 # MAIN
 
-#makeDirectory qc_1
-#fastqQualityControl qc_1
+makeDirectory qc_1
+fastqQualityControl "${inputFolder}/*" "${outputFolder}/qc_1"
 
 makeDirectory trimmed
 makeDirectory unpaired
 trimFastq
 sleep 1
 
-#makeDirectory qc_2
-#fastqQualityControl qc_2
+makeDirectory qc_2
+fastqQualityControl "${outputFolder}trimmed/*" "${outputFolder}/qc_2"
 
-#makeDirectory unmapped
-#pairedFastQsToUnmappedBAM
-#sleep 1
+makeDirectory unmapped
+pairedFastQsToUnmappedBAM
+sleep 1
 
-#makeDirectory temporary_files
-#validateSam
-#sleep 1
+makeDirectory temporary_files
+validateSam
+sleep 1
 
-#makeDirectory unmerged
-#makeDirectory merged
-#parallelRun samToFastqAndBwaMem "${outputFolder}unmapped/*"
-#sleep 1
+makeDirectory unmerged
+makeDirectory merged
+parallelRun samToFastqAndBwaMem "${outputFolder}unmapped/*"
+sleep 1
 
-#makeDirectory duplicates_marked
-#parallelRun markDuplicates "${outputFolder}merged/*.bam"
-#sleep 1
+makeDirectory duplicates_marked
+parallelRun markDuplicates "${outputFolder}merged/*.bam"
+sleep 1
 
-#makeDirectory sorted
-#parallelRun sortAndFixTags "${outputFolder}duplicates_marked/*.bam"
-#sleep 1
+makeDirectory sorted
+parallelRun sortAndFixTags "${outputFolder}duplicates_marked/*.bam"
+sleep 1
 
-#makeDirectory temporary_files/recal_reports
-#parallelRun baseRecalibrator "${outputFolder}sorted/*.bam"
-#sleep 1
+makeDirectory temporary_files/recal_reports
+parallelRun baseRecalibrator "${outputFolder}sorted/*.bam"
+sleep 1
 
-#makeDirectory recalibrated
-#parallelRun applyBqsr "${outputFolder}sorted/*.bam"
+makeDirectory recalibrated
+parallelRun applyBqsr "${outputFolder}sorted/*.bam"
