@@ -23,13 +23,14 @@ Dependables:
 ## Tools
 
 #### proc
-Uses *parallelProcessing.sh*.
+Performs preprocessing steps for further analysis.
 - pairedFastQsToUnmappedBAM
 Converts to unmapped .bam files paired .fastq files in the following format:
 ```
 [sample]_[name]_[library]_[direction: R1 or R2]
 ```
 - validateSam
+Checks if the resulting .bam file is good for GATK analysis
 - samToFastqAndBwaMem
 - markDuplicates
 - sortAndFixTags
