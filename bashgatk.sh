@@ -8,8 +8,6 @@ export outputFolder="$(realpath $2)/"
 
 source ./conf.sh
 
-echo ${scriptsDirectory}
-
 if [ $command == 'proc' ]; then
     bash ${scriptsDirectory}/parallelProcessing.sh
 elif [ $command == 'procWGS' ]; then

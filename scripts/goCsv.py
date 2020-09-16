@@ -10,9 +10,8 @@ global outputName
 
 innerDelimeter = ','
 outerDelimeter = '\t'
-#extensionFilter = 'vep.vcf.pass.vcf'
-extensionFilter = 'vcf.code.vcf'
-#outputName = '/combined_passed.csv'
+extensionFilter = 'vep.vcf.pass.vcf'
+#extensionFilter = 'vcf.code.vcf'
 outputName = '/combined_passed.csv'
 
 def lineListCheck(someList, filename):
