@@ -10,9 +10,6 @@ global outputName
 
 innerDelimeter = ','
 outerDelimeter = '\t'
-extensionFilter = 'vep.vcf.pass.vcf'
-#extensionFilter = 'vcf.code.vcf'
-outputName = '/combined_passed.csv'
 
 def lineListCheck(someList, filename):
     if len(someList) == 1:
@@ -128,7 +125,7 @@ def writeToCsv(varDict, headerDone, csvFile, delimeter=outerDelimeter):
     csvFile.write(delimeter.join(v for v in varDict.values()) + '\n')
     return headerDone
 
-def main():
+def createCsv(extensionFilter, outputName):
     headerDone = False
     
     with open(wd + outputName, 'w') as csvFile:
@@ -141,5 +138,45 @@ def main():
                         varDict = parseVepColumns(varDict, vepList)
                         
                         headerDone = writeToCsv(varDict, headerDone, csvFile)
-                    
-main()
+
+def addFreq():
+    import pandas
+    with open(wd + '/combined.csv', 'r') as inpObj:
+        DF = pandas.read_csv(inpObj, sep='\t')
+    
+    DF['VARIANT'] = DF['#CHROM'] + ':' + DF['POS'].astype(str) + ':' + DF['REF'] + '/' + DF['ALT']
+    
+    var_freq = DF['VARIANT'].value_counts()
+
+    DF['VAR_FREQ'] = DF['VARIANT'].map(var_freq)
+    
+    grvarDF = DF.groupby('VARIANT')
+    grvarDict = {}
+    for k in grvarDF.groups:
+        whichSamples = []
+        for l in grvarDF.groups[k]:
+            whichSamples.append(DF['SAMPLE'][l])
+        grvarDict[k] = ', '.join(whichSamples)
+    DF['VAR_FREQ_WHICH'] = DF['VARIANT'].map(grvarDict)
+
+    with open(wd + '/combined_passed.csv', 'r') as inpObj:
+        DF = pandas.read_csv(inpObj, sep='\t')
+    
+    DF['VARIANT'] = DF['#CHROM'] + ':' + DF['POS'].astype(str) + ':' + DF['REF'] + '/' + DF['ALT']
+    DF['VAR_FREQ'] = DF['VARIANT'].map(var_freq)
+    
+    var_freq = DF['VARIANT'].value_counts()
+    DF['VAR_FREQ_PASS'] = DF['VARIANT'].map(var_freq)
+    DF['VAR_FREQ_WHICH'] = DF['VARIANT'].map(grvarDict)
+    
+    grDF = DF.groupby('SAMPLE')
+
+    for df in grDF:
+        df[1].to_csv(wd + '/' + df[0] + '.csv', sep='\t', index=False)
+
+    def many_vars(DF, l):
+        return DF[DF['VARIANT'] == l][['SAMPLE', 'FORMAT_AF']]
+
+createCsv('vep.vcf.pass.vcf', '/combined_passed.csv')
+createCsv('vep.vcf', '/combined.csv')
+addFreq()

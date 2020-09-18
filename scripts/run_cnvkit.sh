@@ -134,13 +134,13 @@ function cnvKitCall {
 }
 
 
-#makeDirectory cnvkit
-#makeDirectory cnvkit/normal
-#makeDirectory cnvkit/pathologic
+makeDirectory cnvkit
+makeDirectory cnvkit/normal
+makeDirectory cnvkit/pathologic
 
-#putTimestamp
-#selectGermlineVcf
-#cnvKitAutobin
-#cnvKitCoverage
-#cnvKitReference
+putTimestamp
+selectGermlineVcf
+cnvKitAutobin
+cnvKitCoverage
+cnvKitReference
 cnvKitCall
