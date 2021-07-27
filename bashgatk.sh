@@ -28,4 +28,6 @@ elif [ $command == 'cnvk' ]; then
     bash ${scriptsDirectory}/run_cnvkit.sh
 elif [ $command == 'deep' ]; then
     bash ${scriptsDirectory}/deepvariant.sh
+elif [ $command == '2rus' ]; then
+    python3 ${scriptsDirectory}/2rus.py $outputFolder
 fi
