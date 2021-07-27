@@ -25,7 +25,7 @@ rusDict = {
     'INFO_ANNO_CDS': 'Q:_кДНК_поз',
     'INFO_ANNO_CFL': 'Q:_Реф_конфликт',
     'INFO_ANNO_CLNACC': 'Q:_ClinVar_ID',
-    'INFO_ANNO_CLNALLE': 'Q:_ClinVar_номер_вллеля',
+    'INFO_ANNO_CLNALLE': 'Q:_ClinVar_номер_аллеля',
     'INFO_ANNO_CLNDBN': 'Q:_ClinVar_заболевание',
     'INFO_ANNO_CLNDSDB': 'Q:_ClinVar_заболевание_в_базе',
     'INFO_ANNO_CLNDSDBID': 'Q:_ClinVar_ID_заболевания',
