@@ -3,7 +3,7 @@ import sys
 import pandas as pd
 
 wd = os.path.abspath(sys.argv[1])
-wd = '.'
+
 rusDict = {
     '#CHROM': 'Хромосома',
     'POS': 'Позиция',
