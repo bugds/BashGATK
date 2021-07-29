@@ -122,8 +122,7 @@ function cnvKitCall {
             --filter ci \
             -v $outputFolder/deepvariant/$base.baf.vcf \
             -o $outputFolder/cnvkit/pathologic/$base.vcf.cns \
-            --purity $(< $outputFolder/doublePurity/$base.txt)
-            #--purity $(cat $outputFolder/purity/$base.txt)
+            --purity $(< $outputFolder/purity/$base)
             #--purity $(cat $outputFolder/doublePurity/$base.txt) \
             
         $cnvkit scatter \

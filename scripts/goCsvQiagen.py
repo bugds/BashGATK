@@ -180,4 +180,4 @@ def addFreq():
 
 createCsv('vep.vcf.pass.vcf', '/combined_passed.csv')
 createCsv('vep.vcf', '/combined.csv')
-addFreq()
+#addFreq()

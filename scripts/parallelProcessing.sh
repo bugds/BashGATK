@@ -240,38 +240,38 @@ function applyBqsr {
 makeDirectory qc_1
 fastqQualityControl "${inputFolder}/*" "${outputFolder}/qc_1"
 
-makeDirectory trimmed
-makeDirectory unpaired
-trimFastq
-sleep 1
+#makeDirectory trimmed
+#makeDirectory unpaired
+#trimFastq
+#sleep 1
 
-makeDirectory qc_2
-fastqQualityControl "${outputFolder}trimmed/*" "${outputFolder}/qc_2"
+#makeDirectory qc_2
+#fastqQualityControl "${outputFolder}trimmed/*" "${outputFolder}/qc_2"
 
-makeDirectory unmapped
-pairedFastQsToUnmappedBAM
-sleep 1
+#makeDirectory unmapped
+#pairedFastQsToUnmappedBAM
+#sleep 1
 
-makeDirectory temporary_files
-validateSam
-sleep 1
+#makeDirectory temporary_files
+#validateSam
+#sleep 1
 
-makeDirectory unmerged
-makeDirectory merged
-parallelRun samToFastqAndBwaMem "${outputFolder}unmapped/*"
-sleep 1
+#makeDirectory unmerged
+#makeDirectory merged
+#parallelRun samToFastqAndBwaMem "${outputFolder}unmapped/*"
+#sleep 1
 
-makeDirectory duplicates_marked
-parallelRun markDuplicates "${outputFolder}merged/*.bam"
-sleep 1
+#makeDirectory duplicates_marked
+#parallelRun markDuplicates "${outputFolder}merged/*.bam"
+#sleep 1
 
-makeDirectory sorted
-parallelRun sortAndFixTags "${outputFolder}duplicates_marked/*.bam"
-sleep 1
+#makeDirectory sorted
+#parallelRun sortAndFixTags "${outputFolder}duplicates_marked/*.bam"
+#sleep 1
 
-makeDirectory temporary_files/recal_reports
-parallelRun baseRecalibrator "${outputFolder}sorted/*.bam"
-sleep 1
+#makeDirectory temporary_files/recal_reports
+#parallelRun baseRecalibrator "${outputFolder}sorted/*.bam"
+#sleep 1
 
-makeDirectory recalibrated
-parallelRun applyBqsr "${outputFolder}sorted/*.bam"
+#makeDirectory recalibrated
+#parallelRun applyBqsr "${outputFolder}sorted/*.bam"
