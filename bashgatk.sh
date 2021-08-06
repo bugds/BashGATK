@@ -6,7 +6,7 @@ set -o pipefail
 export command=$1
 export outputFolder="$(realpath $2)/"
 
-source ./conf.sh
+source "$(dirname $0)"/conf.sh
 
 if [ $command == 'proc' ]; then
     bash ${scriptsDirectory}/parallelProcessing.sh
