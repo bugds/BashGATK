@@ -113,7 +113,7 @@ elif [ $command == 'deep19' ]; then
     export binVersion='0.10.0'
     export refFolder=/home/bioinfuser/NGS/Reference/
     export refFastaPathPart=hg19/hg19.fa
-    export regionsPathPart=intervals/2021_04_26/depths.bed
+    export regionsPathPart=intervals/2021_04_26/depths_hg19.bed
 elif [ $command == 'cnvqiagen' ]; then
     # run_cnvkit.sh
     export cnvkit='python3 /home/bioinfuser/NGS/Software/cnvkit/cnvkit.py'
