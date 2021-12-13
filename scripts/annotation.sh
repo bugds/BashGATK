@@ -42,9 +42,24 @@ function onlyPASS {
 
 makeDirectory annotation
 
-for file in ${inputFolder}/*/*.filtered.vcf; do
-    base=$(basename -- $file)
-    annotateAnnovar $file $base
-    annotateVep $base
-    onlyPASS $base
-done
+if [[ -d "${inputFolder}/mutect2" ]]
+then
+    for file in ${inputFolder}/mutect2/*.filtered.vcf; do
+        base=$(basename -- $file)
+        annotateAnnovar $file $base
+        annotateVep $base
+        onlyPASS $base
+    done
+fi
+
+if [[ -d "${inputFolder}/deepvariant" ]]
+then
+    gunzip ${inputFolder}/deepvariant/*.vcf.gz
+    rm ${inputFolder}/deepvariant/*.g.vcf
+    for file in ${inputFolder}/deepvariant/*.vcf; do
+        base=$(basename -- $file)
+        annotateAnnovar $file $base
+        annotateVep $base
+        onlyPASS $base
+    done
+fi

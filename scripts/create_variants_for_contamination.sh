@@ -27,7 +27,7 @@ function unzipGnomad {
 }
 
 function indexFeatureFile {
-    gatk --java-options "${javaOpt}" \
+    $gatk --java-options "${javaOpt}" \
       IndexFeatureFile \
         -I ${gnomad}
 }
@@ -36,7 +36,7 @@ function indexFeatureFile {
 function selectVariants {
     makeDirectory $wd
 
-    gatk --java-options "${javaOpt}" \
+    $gatk --java-options "${javaOpt}" \
       SelectVariants \
         -V $gnomad \
         -L $regions \
@@ -67,7 +67,7 @@ function makeAlleleFrequencyOnlyVcf {
     # bgzip ${wd}simplified.vcf -c > ${wd}AFonly.vcf.gz
 
     # Index output file:
-    gatk --java-options "${javaOpt}" \
+    $gatk --java-options "${javaOpt}" \
       IndexFeatureFile \
         -I ${wd}AFonly.vcf
 
@@ -77,7 +77,7 @@ function makeAlleleFrequencyOnlyVcf {
 
 # Variants for contamination input in Mutect2
 function selectCommonBiallelicSNPs {
-    gatk --java-options "${javaOpt}" \
+    $gatk --java-options "${javaOpt}" \
       SelectVariants \
         -V ${wd}AFonly.vcf \
         -select-type SNP -restrict-alleles-to BIALLELIC \

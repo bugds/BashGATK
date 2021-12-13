@@ -2,7 +2,7 @@ import os
 import re
 import sys
 import pandas as pd
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 wd = os.path.abspath(sys.argv[1])
 
@@ -253,12 +253,16 @@ rusDict = {
 
 for filename in ['/combined.csv', '/combined_passed.csv']:
     df = pd.read_csv(wd + filename, sep = '\t')
-    df = df.rename(columns = rusDict)
-    df = df[rusDict.values()]
-    df.to_csv(wd + filename.replace('combined', 'rus_combined'), sep = '\t', index = False)
+    short_dict = dict()
+    for k in rusDict:
+        if k in df.columns:
+            short_dict[k] = rusDict[k]
+    df = df.rename(columns = short_dict)
+    df = df[short_dict.values()]
+    df.to_csv(wd + filename.replace('combined', 'rus_combined'), sep = '\t', index = False, encoding = 'utf-8')
 
 report_df = pd.read_csv(wd + '/combined_passed.csv', sep = '\t')
-
+'''
 good_functions = ['exonic', 'splicing']
 
 report_df = report_df[report_df['INFO_ANNO_Func.refGene'].isin(good_functions)]
@@ -346,4 +350,4 @@ for index, row in short_report_df.iterrows():
 short_report_df = short_report_df[new_columns]
 
 short_report_df.to_csv(wd + '/short_report.csv', sep = '\t')
-
+'''

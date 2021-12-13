@@ -11,8 +11,9 @@ function getMetadata {
     for s in $substrings; do
         if [[ ${s:0:1} == "S" ]]; then 
             sample=${s:1}
-        elif [[ ${s:0:3} == "MED" ]]; then
-            name=$s
+            name=${s:1}
+        # elif [[ ${s:0:3} == "MED" ]]; then
+        #    name=$s
         elif [[ ${s:0:1} == "L" ]]; then
             library=${s:1}
         elif [[ ${s:0:1} == "R" ]]; then
@@ -72,7 +73,7 @@ function trimFastq {
 }
 
 function fastqToSam {
-    gatk FastqToSam \
+    $gatk FastqToSam \
         -F1 $forward \
         -F2 $reverse \
         -O "${outputFolder}unmapped/${name}.bam" \
@@ -98,7 +99,7 @@ function validateSam {
     local files="${outputFolder}unmapped/*"
 
     for bam in $files; do
-        gatk ValidateSamFile \
+        $gatk ValidateSamFile \
             -I $bam \
             --QUIET true \
             -M SUMMARY \
