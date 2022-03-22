@@ -14,7 +14,7 @@ function annotateAnnovar {
         $1 \
         $annovarDb \
         -buildver $buildVer \
-        -out ${outputFolder}/annotation/${2}_anno \
+        -out ${outputFolder}/${3}/${2}_anno \
         -remove \
         -protocol $protocol \
         -operation $operation \
@@ -30,25 +30,25 @@ function annotateVep {
         --everything \
         --fasta $fasta \
         --vcf \
-        -i ${outputFolder}/annotation/${1}_anno.hg38_multianno.vcf \
-        -o ${outputFolder}/annotation/${1}_vep.vcf
+        -i ${outputFolder}/${2}/${1}_anno.hg38_multianno.vcf \
+        -o ${outputFolder}/${2}/${1}_vep.vcf
 }
 
 function onlyPASS {
-    local file=${outputFolder}/annotation/${1}_vep.vcf
+    local file=${outputFolder}/${2}/${1}_vep.vcf
 
     awk -F '\t' '{if($0 ~ /\#/) print; else if($7 == "PASS") print}' $file > ${file}.pass.vcf
 }
 
-makeDirectory annotation
-
 if [[ -d "${inputFolder}/mutect2" ]]
 then
-    for file in ${inputFolder}/mutect2/*.filtered.vcf; do
+    for file in ${inputFolder}/mutect2/*/*.filtered.vcf; do
         base=$(basename -- $file)
-        annotateAnnovar $file $base
-        annotateVep $base
-        onlyPASS $base
+        folder="anno_soma"
+        makeDirectory $folder
+        annotateAnnovar $file $base $folder
+        annotateVep $base $folder
+        onlyPASS $base $folder
     done
 fi
 
@@ -58,8 +58,10 @@ then
     rm ${inputFolder}/deepvariant/*.g.vcf
     for file in ${inputFolder}/deepvariant/*.vcf; do
         base=$(basename -- $file)
-        annotateAnnovar $file $base
-        annotateVep $base
-        onlyPASS $base
+        folder="anno_germ"
+        makeDirectory $folder
+        annotateAnnovar $file $base $folder
+        annotateVep $base $folder
+        onlyPASS $base $folder
     done
 fi

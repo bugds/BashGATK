@@ -4,12 +4,15 @@ set -e
 set -o pipefail
 
 export command=$1
-export outputFolder="$(realpath $2)/"
+export config=$2
+export outputFolder="$(realpath $3)/"
 
-source "$(dirname $0)"/conf.sh
+source $config
 
 if [ $command == 'proc' ]; then
     bash ${scriptsDirectory}/parallelProcessing.sh
+elif [ $command == 'procAmp' ]; then
+    bash ${scriptsDirectory}/parallelProcessingAmpliconBased.sh
 elif [ $command == 'procWGS' ]; then
     bash ${scriptsDirectory}/processingWGS.sh
 elif [ $command == 'somaSNP' ]; then
@@ -38,4 +41,8 @@ elif [ $command == 'cnvk19' ]; then
     bash ${scriptsDirectory}/run_cnvkit.sh
 elif [ $command == '2rus' ]; then
     python3 ${scriptsDirectory}/2rus.py $outputFolder
+elif [ $command == 'cint' ]; then
+    bash ${scriptsDirectory}/createIntervals.sh $outputFolder
+elif [ $command == 'aved' ]; then
+    bash ${scriptsDirectory}/averageDepth.sh $outputFolder
 fi

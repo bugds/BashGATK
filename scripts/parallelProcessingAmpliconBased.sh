@@ -9,13 +9,13 @@ function getMetadata {
     substrings=$(echo $filename | tr '_' ' ')
 
     for s in $substrings; do
-        if [[ ${s:0:1} == $nameSubString ]]; then 
+        if [[ ${s:0:1} == "S" ]]; then 
             sample=${s:1}
             name=${s:1}
         # elif [[ ${s:0:3} == "MED" ]]; then
         #    name=$s
-        elif [[ ${s:0:1} == $laneSubString ]]; then
-            lane=${s:1}
+        elif [[ ${s:0:1} == "L" ]]; then
+            library=${s:1}
         elif [[ ${s:0:1} == "R" ]]; then
             if [[ ${s:1:2} == "1" ]]; then
                 direction=true
@@ -73,15 +73,13 @@ function trimFastq {
 }
 
 function fastqToSam {
-    local basename=$(basename -- $forward)
-
     $gatk FastqToSam \
         -F1 $forward \
         -F2 $reverse \
-        -O "${outputFolder}unmapped/${basename}.bam" \
+        -O "${outputFolder}unmapped/${name}.bam" \
         -RG "rg${sample}:${lane}" \
         -SM $sample \
-        -LB "Lib" \
+        -LB $library \
         -PL $platform
 }
 
@@ -146,7 +144,7 @@ function samToFastqAndBwaMem {
         --ATTRIBUTES_TO_RETAIN X0 \
         --ALIGNED_BAM "${outputFolder}unmerged/${output}.bam" \
         --UNMAPPED_BAM ${1} \
-        --OUTPUT "${outputFolder}premerged/${output}.bam" \
+        --OUTPUT "${outputFolder}merged/${output}.bam" \
         --REFERENCE_SEQUENCE ${refFasta} \
         --PAIRED_RUN true \
         --SORT_ORDER "unsorted" \
@@ -164,51 +162,6 @@ function samToFastqAndBwaMem {
         --UNMAPPED_READ_STRATEGY COPY_TO_TAG \
         --ALIGNER_PROPER_PAIR_FLAGS true \
         --UNMAP_CONTAMINANT_READS true
-}
-
-function mergeSamFiles {
-    local javaOpt="-Xms4000m"
-    local files="${outputFolder}premerged/*"
-
-    for file in $files; do
-        filename=$(basename -- $file)
-        
-        substrings=$(echo $filename | tr '_' ' ')
-
-        for s in $substrings; do
-            if [[ ${s:0:1} == $nameSubString ]]; then
-                name=${s:0}
-            fi
-        done
-
-        if [ ! -f "${outputFolder}merged/${name}.bam" ]; then
-            echo $name
-            $samtools merge -r \
-                ${outputFolder}merged/${name}.bam \
-                ${outputFolder}premerged/*${name}*
-        fi
-    done
-}
-
-function querynameSort {
-    local javaOpt="-Xms4000m"
-    
-    $samtools sort -n $1 > $1_out
-}
-
-function markDuplicates {
-    local javaOpt="-Xms4000m"
-
-    $gatk --java-options "-Dsamjdk.compression_level=${compressionLevel} ${javaOpt}" \
-      MarkDuplicates \
-        --INPUT $1 \
-        --OUTPUT ${outputFolder}duplicates_marked/$(basename -- ${1}) \
-        --METRICS_FILE ${outputFolder}duplicates_marked/$(basename -- ${1}).mtrx \
-        --VALIDATION_STRINGENCY SILENT \
-        --OPTICAL_DUPLICATE_PIXEL_DISTANCE 2500 \
-        --SORTING_COLLECTION_SIZE_RATIO 0.25 \
-        --ASSUME_SORT_ORDER queryname \
-        --CREATE_MD5_FILE true
 }
 
 function sortAndFixTags {
@@ -290,22 +243,12 @@ validateSam
 sleep 1
 
 makeDirectory unmerged
-makeDirectory premerged
+makeDirectory merged
 parallelRun samToFastqAndBwaMem "${outputFolder}unmapped/*"
 sleep 1
 
-makeDirectory merged
-mergeSamFiles
-sleep 1
-
-parallelRun querynameSort "${outputFolder}merged/*.bam"
-sleep 1
-makeDirectory duplicates_marked
-parallelRun markDuplicates "${outputFolder}merged/*.bam"
-sleep 1
-
 makeDirectory sorted
-parallelRun sortAndFixTags "${outputFolder}duplicates_marked/*.bam"
+parallelRun sortAndFixTags "${outputFolder}merged/*.bam"
 sleep 1
 
 makeDirectory temporary_files/recal_reports

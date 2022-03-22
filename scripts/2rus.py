@@ -4,6 +4,10 @@ import sys
 import pandas as pd
 #import matplotlib.pyplot as plt
 
+depth_limit = 100
+af_limit = 0.02
+paf_limit = 0.01
+
 wd = os.path.abspath(sys.argv[1])
 
 rusDict = {
@@ -18,6 +22,9 @@ rusDict = {
     'FORMAT_AD': 'Глуб_прочтения_аллелей',
     'FORMAT_GT': 'Генотип',
     'FORMAT_VF': 'Альт_аллел_ч-та',
+    'FORMAT_AF': 'Аллельная_частота',
+    'FORMAT_VAF': 'Аллельная_частота',
+    'FORMAT_DP': 'Глубина_прочтения',
     'INFO_ANNO_GENE': 'Q:_Ген',
     'INFO_ANNO_GENEINFO': 'Q:_ID_гена',
     'INFO_ANNO_ANN': 'Q:_Аннотация',
@@ -177,8 +184,8 @@ rusDict = {
     'INFO_ANNO_CLNALLELEID': 'A:_ClinVar_ID',
     'INFO_ANNO_CLNDN': 'A:_ClinVar_заболевание',
     'INFO_ANNO_CLNDISDB': 'A:_ClinVar_ID_заболевания',
-    'INFO_ANNO_cosmic92_coding': 'A:_COSMIC92_кодир',
-    'INFO_ANNO_cosmic92_noncoding': 'A:_COSMIC92_все',
+    'INFO_ANNO_cosmic95_coding': 'A:_COSMIC92_кодир',
+    'INFO_ANNO_cosmic95_noncoding': 'A:_COSMIC92_все',
     'INFO_ANNO_avsnp150': 'A:_avsnp150_ID',
     'INFO_VEP_Allele': 'V:_Считанный_аллель',
     'INFO_VEP_Consequence': 'V:_Последствия',
@@ -251,103 +258,118 @@ rusDict = {
     'INFO_VEP_TRANSCRIPTION_FACTORS': 'V:_Ф-ры_транскрипц'
 }
 
-for filename in ['/combined.csv', '/combined_passed.csv']:
-    df = pd.read_csv(wd + filename, sep = '\t')
-    short_dict = dict()
-    for k in rusDict:
-        if k in df.columns:
-            short_dict[k] = rusDict[k]
-    df = df.rename(columns = short_dict)
-    df = df[short_dict.values()]
-    df.to_csv(wd + filename.replace('combined', 'rus_combined'), sep = '\t', index = False, encoding = 'utf-8')
+for folder in ['_anno_soma', '_anno_germ', '']:
+    for filename in ['/combined' + folder + '.csv', '/combined_passed_' + folder + '.csv']:
+        if os.path.exists(filename):
+            df = pd.read_csv(wd + filename, sep = '\t')
+            short_dict = dict()
+            for k in rusDict:
+                if k in df.columns:
+                    short_dict[k] = rusDict[k]
+            df = df.rename(columns = short_dict)
+            df = df[short_dict.values()]
+            df.to_csv(wd + filename.replace('combined', 'rus_combined'), sep = '\t', index = False, encoding = 'utf-8')
 
-report_df = pd.read_csv(wd + '/combined_passed.csv', sep = '\t')
-'''
-good_functions = ['exonic', 'splicing']
-
-report_df = report_df[report_df['INFO_ANNO_Func.refGene'].isin(good_functions)]
-report_df = report_df[report_df['INFO_ANNO_UMT'] != '.']
-report_df = report_df[report_df['INFO_ANNO_UMT'].astype(int) > 100]
-report_df = report_df[report_df['INFO_ANNO_VMF'] != '.']
-report_df = report_df[report_df['INFO_ANNO_VMF'].astype(float) > 0.02]
-#r = re.compile('INFO_ANNO_AF.*')
-#af_strings = list(filter(r.match, report_df.columns))
-#for af in af_strings:
-af = 'INFO_ANNO_AF_popmax'
-temp_df = report_df[report_df[af] != '.']
-temp_df = temp_df[temp_df[af].astype(float) < 0.01]
-report_df = pd.concat([temp_df, report_df[report_df[af] == '.']])
-
-class ReportedMutation():
-    def __init__(self, name, af):
-        self.name = name
-        self.af = af
-
-report_dict = dict()
-for s in report_df['SAMPLE'].unique():
-    sample_df = report_df[report_df['SAMPLE'] == s]
-    report_dict[s] = dict()
-    genes = sample_df['INFO_ANNO_Gene.refGene'].unique()
-    for g in genes:
-        genes_df = sample_df[sample_df['INFO_ANNO_Gene.refGene'] == g]
-        report_dict[s][g] = list()
-        for index, row in genes_df.iterrows():
-            report_dict[s][g].append(ReportedMutation(row['INFO_ANNO_AAChange.refGene'].split(',')[0].split(':')[-1], row['INFO_ANNO_VMF']))
-
-#for s in report_dict:
-#    print(s)
-#    plt.figure(s)
-#    i = 0
-#    for g in report_dict[s]:
-#        i += 1
-#        ax = plt.subplot(len(report_dict[s]),1,i)
-#        fig = plt.gcf()
-#        fig.set_size_inches(10, 10)
-#        ax.bar([m.name for m in report_dict[s][g]], [m.af for m in report_dict[s][g]])
-#        ax.set_yticklabels([0, 1])
-#        ax.set_ylim([-0.1, 1.1])
-#        ax.set_title(g)
-#    plt.tight_layout(pad = 1)
-#    plt.show()
-#    plt.close()
-#    break
-
-report_df = report_df.rename(columns = rusDict)
-report_df = report_df[rusDict.values()]
-report_df.to_csv(wd + '/report.csv', sep = '\t', index = False)
-
-report_df['id'] = report_df[rusDict['#CHROM']] \
-    + ':' \
-    + report_df[rusDict['POS']].astype(str) \
-    + ':' \
-    + report_df[rusDict['REF']] \
-    + '/' \
-    + report_df[rusDict['ALT']]
-
-new_columns = list(report_df[rusDict['SAMPLE']].unique())
-short_report_df = report_df.groupby(['id']).agg(list)
-
-for column in new_columns:
-    short_report_df[column] = 0
-
-additional_new_columns = [
-    rusDict['INFO_ANNO_Gene.refGene']
-]
-
-new_columns = additional_new_columns + new_columns
-
-for index, row in short_report_df.iterrows():
-    i = 0
-    for column in row[rusDict['SAMPLE']]:
-        short_report_df.loc[index, column] = row[rusDict['INFO_ANNO_VMF']][i]
-        i += 1
-    for column in additional_new_columns:
-        if len(set(row[column])) == 1:
-            short_report_df.loc[index, column] = row[column][0]
-        else:
-            raise Exception('BAD ADDITIONAL COLUMN')
-
-short_report_df = short_report_df[new_columns]
-
-short_report_df.to_csv(wd + '/short_report.csv', sep = '\t')
-'''
+    if os.path.exists(wd + '/combined_passed' + folder + '.csv'):
+        report_df = pd.read_csv(wd + '/combined_passed' + folder + '.csv', sep = '\t')
+        good_functions = ['exonic', 'splicing']
+        
+        report_df = report_df[report_df['INFO_ANNO_Func.refGene'].isin(good_functions)]
+        if 'INFO_ANNO_UMT' in report_df.columns:
+            depth = 'INFO_ANNO_UMT'
+            af = 'INFO_ANNO_VMF'
+        elif 'FORMAT_VAF' in report_df.columns:
+            depth = 'FORMAT_DP'
+            af = 'FORMAT_VAF'
+            for lst_col in ['FORMAT_VAF', 'ALT']:
+                report_df = report_df.assign(**{lst_col:report_df[lst_col].astype(str).str.split(',')})
+            report_df = report_df.explode(['FORMAT_VAF', 'ALT'])
+        elif 'FORMAT_AF' in report_df.columns:
+            depth = 'FORMAT_DP'
+            af = 'FORMAT_AF'
+        report_df = report_df[report_df[depth] != '.']
+        report_df = report_df[report_df[af] != '.']
+        report_df = report_df[report_df[depth].astype(int) > depth_limit]
+        report_df = report_df[report_df[af].astype(float) > af_limit]
+        paf = 'INFO_ANNO_AF_popmax'
+        numeric_df = report_df[pd.to_numeric(report_df[paf], errors = 'coerce').notnull()]
+        non_numeric_df = pd.concat([numeric_df, report_df]).drop_duplicates(keep = False)
+        numeric_df = numeric_df[numeric_df[paf].astype(float) < paf_limit]
+        report_df = pd.concat([numeric_df, non_numeric_df])
+        
+        class ReportedMutation():
+            def __init__(self, name, paf):
+                self.name = name
+                self.paf = paf
+        
+        report_dict = dict()
+        for s in report_df['SAMPLE'].unique():
+            sample_df = report_df[report_df['SAMPLE'] == s]
+            report_dict[s] = dict()
+            genes = sample_df['INFO_ANNO_Gene.refGene'].unique()
+            for g in genes:
+                genes_df = sample_df[sample_df['INFO_ANNO_Gene.refGene'] == g]
+                report_dict[s][g] = list()
+                for index, row in genes_df.iterrows():
+                    report_dict[s][g].append(ReportedMutation(row['INFO_ANNO_AAChange.refGene'].split(',')[0].split(':')[-1], row[af]))
+        
+        #for s in report_dict:
+        #    print(s)
+        #    plt.figure(s)
+        #    i = 0
+        #    for g in report_dict[s]:
+        #        i += 1
+        #        ax = plt.subplot(len(report_dict[s]),1,i)
+        #        fig = plt.gcf()
+        #        fig.set_size_inches(10, 10)
+        #        ax.bar([m.name for m in report_dict[s][g]], [m.paf for m in report_dict[s][g]])
+        #        ax.set_yticklabels([0, 1])
+        #        ax.set_ylim([-0.1, 1.1])
+        #        ax.set_title(g)
+        #    plt.tight_layout(pad = 1)
+        #    plt.show()
+        #    plt.close()
+        #    break
+        
+        report_df = report_df.rename(columns = rusDict)
+        rusDictValues = [v for v in report_df.columns if v in rusDict.values()]
+        report_df = report_df[rusDictValues]
+        report_df.to_csv(wd + '/report' + folder + '.csv', sep = '\t', index = False)
+        
+        report_df['the_id'] = report_df[rusDict['#CHROM']] \
+            + ':' \
+            + report_df[rusDict['POS']].astype(str) \
+            + ':' \
+            + report_df[rusDict['REF']] \
+            + '/' \
+            + report_df[rusDict['ALT']]
+        
+        new_columns = list(report_df[rusDict['SAMPLE']].unique())
+        short_report_df = report_df[[rusDict['INFO_ANNO_Gene.refGene'], rusDict[paf], rusDict[af], rusDict['SAMPLE'], 'the_id']]
+        #print(short_report_df.to_string())
+        short_report_df = short_report_df.groupby('the_id').agg(list)
+        
+        for column in new_columns:
+            short_report_df[column] = 0
+        
+        additional_new_columns = [
+            rusDict['INFO_ANNO_Gene.refGene'],
+            rusDict[paf]
+        ]
+        
+        new_columns = additional_new_columns + new_columns
+        
+        for index, row in short_report_df.iterrows():
+            i = 0
+            for column in row[rusDict['SAMPLE']]:
+                short_report_df.loc[index, column] = row[rusDict[af]][i]
+                i += 1
+            for column in additional_new_columns:
+                if len(set(row[column])) == 1:
+                    short_report_df.loc[index, column] = row[column][0]
+                else:
+                    raise Exception('BAD ADDITIONAL COLUMN')
+        
+        short_report_df = short_report_df[new_columns]
+        
+        short_report_df.to_csv(wd + '/short_report' + folder + '.csv', sep = '\t')

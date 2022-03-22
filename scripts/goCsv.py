@@ -27,8 +27,8 @@ def dataSizeCheck(varData, headerList):
     if not len(varData) == len(headerList):
         raise Exception('Header size different')
 
-def getData(wd, filename):
-    with open(wd + '/annotation/' + filename, 'r') as vcfFile:
+def getData(wd, filename, folder):
+    with open(wd + '/' + folder + '/' + filename, 'r') as vcfFile:
         lines = vcfFile.readlines()
 
         infoLines = [l.replace('\n', '') for l in lines if l.startswith('##INFO=')]
@@ -126,13 +126,13 @@ def writeToCsv(varDict, headerDone, csvFile, delimeter=outerDelimeter):
     csvFile.write(delimeter.join(v for v in varDict.values()) + '\n')
     return headerDone
 
-def createCsv(extensionFilter, outputName):
+def createCsv(extensionFilter, outputName, folder):
     headerDone = False
     
     with open(wd + outputName, 'w') as csvFile:
-        for filename in os.listdir(wd + '/annotation'):
+        for filename in os.listdir(wd + '/' + folder):
                 if filename.endswith(extensionFilter):
-                    formatList, annoList, vepList, headerList, dataLines = getData(wd, filename)
+                    formatList, annoList, vepList, headerList, dataLines = getData(wd, filename, folder)
                     for line in dataLines:
                         varDict = parseFormatColumns(line, headerList, formatList, filename)
                         varDict = parseAnnoColumns(varDict, annoList)
@@ -140,9 +140,9 @@ def createCsv(extensionFilter, outputName):
                         
                         headerDone = writeToCsv(varDict, headerDone, csvFile)
 
-def addFreq():
+def addFreq(folder):
     import pandas
-    with open(wd + '/combined.csv', 'r') as inpObj:
+    with open(wd + '/combined_' + folder + '.csv', 'r') as inpObj:
         DF = pandas.read_csv(inpObj, sep='\t')
     
     DF['VARIANT'] = DF['#CHROM'] + ':' + DF['POS'].astype(str) + ':' + DF['REF'] + '/' + DF['ALT']
@@ -160,7 +160,7 @@ def addFreq():
         grvarDict[k] = ', '.join(str(whichSamples))
     DF['VAR_FREQ_WHICH'] = DF['VARIANT'].map(grvarDict)
 
-    with open(wd + '/combined_passed.csv', 'r') as inpObj:
+    with open(wd + '/combined_passed_' + folder + '.csv', 'r') as inpObj:
         DF = pandas.read_csv(inpObj, sep='\t')
     
     DF['VARIANT'] = DF['#CHROM'] + ':' + DF['POS'].astype(str) + ':' + DF['REF'] + '/' + DF['ALT']
@@ -178,6 +178,8 @@ def addFreq():
     def many_vars(DF, l):
         return DF[DF['VARIANT'] == l][['SAMPLE', 'FORMAT_AF']]
 
-createCsv('vep.vcf.pass.vcf', '/combined_passed.csv')
-createCsv('vep.vcf', '/combined.csv')
-addFreq()
+for folder in ['anno_soma', 'anno_germ']:
+    if os.path.isdir(wd + '/' + folder): 
+        createCsv('vep.vcf.pass.vcf', '/combined_passed_' + folder + '.csv', folder)
+        createCsv('vep.vcf', '/combined_' + folder + '.csv', folder)
+        addFreq(folder)

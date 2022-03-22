@@ -40,7 +40,7 @@ function selectVariants {
       SelectVariants \
         -V $gnomad \
         -L $regions \
-        -O ${wd}selected.vcf \
+        -O ${wd}/selected.vcf \
         --lenient
 }
 
@@ -50,39 +50,39 @@ function selectVariants {
 # this task re-indexes and compresses the output vcf
 function makeAlleleFrequencyOnlyVcf {
     # Save off the header for later:
-    grep '^#' ${wd}selected.vcf > ${wd}header &
+    grep '^#' ${wd}/selected.vcf > ${wd}/header &
 
     # Get all lines in the file except the header:
     # Preserve all fields before INFO, Grab only the AF annotation from the INFO Field
     # replace ID (3rd) and QUAL (6th) columns with '.' (empty):
-    grep -v "^#" ${wd}selected.vcf | sed -e 's#\(.*\)\t\(.*\)\t\(.*\)\t\(.*\)\t\(.*\)\t\(.*\)\t\(.*\)\t.*;AF=\([0-9]*\.[e0-9+-]*\).*#\1\t\2\t.\t\4\t\5\t.\t\7\tAF=\8#g' > ${wd}simplified_body &
+    grep -v "^#" ${wd}/selected.vcf | sed -e 's#\(.*\)\t\(.*\)\t\(.*\)\t\(.*\)\t\(.*\)\t\(.*\)\t\(.*\)\t.*;AF=\([0-9]*\.[e0-9+-]*\).*#\1\t\2\t.\t\4\t\5\t.\t\7\tAF=\8#g' > ${wd}/simplified_body &
 
     # Wait for background processes to finish:
     wait
 
     # Consolidate files:
-    cat ${wd}header ${wd}simplified_body > ${wd}AFonly.vcf
+    cat ${wd}/header ${wd}/simplified_body > ${wd}/AFonly.vcf
 
     # # Zip the VCF:
-    # bgzip ${wd}simplified.vcf -c > ${wd}AFonly.vcf.gz
+    # bgzip ${wd}/simplified.vcf -c > ${wd}/AFonly.vcf.gz
 
     # Index output file:
     $gatk --java-options "${javaOpt}" \
       IndexFeatureFile \
-        -I ${wd}AFonly.vcf
+        -I ${wd}/AFonly.vcf
 
     # Cleanup:
-    rm -f ${wd}header ${wd}body ${wd}simplified_info ${wd}simplified_body ${wd}simplified.vcf ${wd}simplified.vcf.idx
+    rm -f ${wd}/header ${wd}/body ${wd}/simplified_info ${wd}/simplified_body ${wd}/simplified.vcf ${wd}/simplified.vcf.idx
 }
 
 # Variants for contamination input in Mutect2
 function selectCommonBiallelicSNPs {
     $gatk --java-options "${javaOpt}" \
       SelectVariants \
-        -V ${wd}AFonly.vcf \
+        -V ${wd}/AFonly.vcf \
         -select-type SNP -restrict-alleles-to BIALLELIC \
         -select "AF > ${minimumAlleleFrequency}" \
-        -O ${wd}variants_for_contamination.vcf \
+        -O ${wd}/variants_for_contamination.vcf \
         --lenient
 }
 
