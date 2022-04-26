@@ -273,7 +273,9 @@ for folder in ['_anno_soma', '_anno_germ', '']:
     if os.path.exists(wd + '/combined_passed' + folder + '.csv'):
         report_df = pd.read_csv(wd + '/combined_passed' + folder + '.csv', sep = '\t')
         good_functions = ['exonic', 'splicing']
+        # good_functions = '|'.join(good_functions)
         
+        # report_df = report_df[report_df['INFO_ANNO_Func.refGene'].str.contains(good_functions)]
         report_df = report_df[report_df['INFO_ANNO_Func.refGene'].isin(good_functions)]
         if 'INFO_ANNO_UMT' in report_df.columns:
             depth = 'INFO_ANNO_UMT'
@@ -281,9 +283,28 @@ for folder in ['_anno_soma', '_anno_germ', '']:
         elif 'FORMAT_VAF' in report_df.columns:
             depth = 'FORMAT_DP'
             af = 'FORMAT_VAF'
-            for lst_col in ['FORMAT_VAF', 'ALT']:
-                report_df = report_df.assign(**{lst_col:report_df[lst_col].astype(str).str.split(',')})
-            report_df = report_df.explode(['FORMAT_VAF', 'ALT'])
+            vaf_df = report_df[report_df['FORMAT_VAF'].str.contains(',')].reset_index(drop = True)
+            alt_df = report_df[report_df['ALT'].str.contains(',')].reset_index(drop = True)
+            if len(vaf_df) != len(alt_df):
+                dif_df = pd.concat([vaf_df, alt_df]).drop_duplicates(keep = False)
+                report_df = pd.concat([report_df, dif_df]).drop_duplicates(keep = False)
+                for lst_col in ['FORMAT_VAF', 'ALT']:
+                    report_df = report_df.assign(**{lst_col:report_df[lst_col].astype(str).str.split(',')})
+                report_df = report_df.explode(['FORMAT_VAF', 'ALT'])
+                report_df = pd.concat([report_df, dif_df])
+            elif len(vaf_df) == 0:
+                pass
+            elif vaf_df != alt_df:
+                dif_df = pd.concat([vaf_df, alt_df]).drop_duplicates(keep = False)
+                report_df = pd.concat([report_df, dif_df]).drop_duplicates(keep = False)
+                for lst_col in ['FORMAT_VAF', 'ALT']:
+                    report_df = report_df.assign(**{lst_col:report_df[lst_col].astype(str).str.split(',')})
+                report_df = report_df.explode(['FORMAT_VAF', 'ALT'])
+                report_df = pd.concat([report_df, dif_df])
+            else:
+                for lst_col in ['FORMAT_VAF', 'ALT']:
+                    report_df = report_df.assign(**{lst_col:report_df[lst_col].astype(str).str.split(',')})
+                report_df = report_df.explode(['FORMAT_VAF', 'ALT'])
         elif 'FORMAT_AF' in report_df.columns:
             depth = 'FORMAT_DP'
             af = 'FORMAT_AF'

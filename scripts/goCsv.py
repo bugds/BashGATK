@@ -173,7 +173,7 @@ def addFreq(folder):
     grDF = DF.groupby('SAMPLE')
 
     for df in grDF:
-        df[1].to_csv(wd + '/' + str(df[0]) + '.csv', sep='\t', index=False)
+        df[1].to_csv(wd + '/' + folder + str(df[0]) + '.csv', sep='\t', index=False)
 
     def many_vars(DF, l):
         return DF[DF['VARIANT'] == l][['SAMPLE', 'FORMAT_AF']]

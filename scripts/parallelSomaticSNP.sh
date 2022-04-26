@@ -42,6 +42,7 @@ function mutect2 {
         -tumor 'cat ${outputFolder}mutect2/${bamName}/${bamName}.txt' \
         --germline-resource $gnomad \
         -L $regions \
+        -pon $pon \
         -O ${outputFolder}mutect2/${bamName}/${bamName}.unfiltered.vcf \
         --bam-output ${outputFolder}mutect2/${bamName}/${bamName}.bamout.bam \
         --f1r2-tar-gz ${outputFolder}mutect2/${bamName}/f1r2.tar.gz
