@@ -17,7 +17,7 @@ function decomposeNormalize {
 
     $bcftools \
         norm \
-        -f $fasta \
+        -f $refFasta \
         -o ${outputFolder}/${3}/${2}_step2 \
         ${outputFolder}/${3}/${2}_step1
 }
