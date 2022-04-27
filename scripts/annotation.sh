@@ -69,7 +69,7 @@ fi
 if [[ -d "${inputFolder}/deepvariant" ]]
 then
     for file in ${inputFolder}/deepvariant/*.vcf.gz; do
-        gunzip $file
+        gunzip -k $file
     done
     rm ${inputFolder}/deepvariant/*.g.vcf
     for file in ${inputFolder}/deepvariant/*.vcf; do
