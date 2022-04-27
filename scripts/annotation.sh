@@ -9,12 +9,25 @@ function makeDirectory {
     fi
 }
 
+function decomposeNormalize {
+    $bcftools \
+        norm -m-both \
+        -o ${outputFolder}/${3}/${2}_step1 \
+        $1
+
+    $bcftools \
+        norm \
+        -f $fasta \
+        -o ${outputFolder}/${3}/${2}_step2 \
+        ${outputFolder}/${3}/${2}_step1
+}
+
 function annotateAnnovar {
     $annovar \
-        $1 \
+        ${outputFolder}/${2}/${1}_step2 \
         $annovarDb \
         -buildver $buildVer \
-        -out ${outputFolder}/${3}/${2}_anno \
+        -out ${outputFolder}/${2}/${1}_anno \
         -remove \
         -protocol $protocol \
         -operation $operation \
@@ -46,7 +59,8 @@ then
         base=$(basename -- $file)
         folder="anno_soma"
         makeDirectory $folder
-        annotateAnnovar $file $base $folder
+        decomposeNormalize $file $base $folder
+        annotateAnnovar $base $folder
         annotateVep $base $folder
         onlyPASS $base $folder
     done
@@ -54,13 +68,16 @@ fi
 
 if [[ -d "${inputFolder}/deepvariant" ]]
 then
-    gunzip ${inputFolder}/deepvariant/*.vcf.gz
+    for file in ${inputFolder}/deepvariant/*.vcf.gz; do
+        gunzip $file
+    done
     rm ${inputFolder}/deepvariant/*.g.vcf
     for file in ${inputFolder}/deepvariant/*.vcf; do
         base=$(basename -- $file)
         folder="anno_germ"
         makeDirectory $folder
-        annotateAnnovar $file $base $folder
+        decomposeNormalize $file $base $folder
+        annotateAnnovar $base $folder
         annotateVep $base $folder
         onlyPASS $base $folder
     done
