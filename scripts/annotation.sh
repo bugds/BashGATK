@@ -71,7 +71,7 @@ then
     for file in ${inputFolder}/deepvariant/*.vcf.gz; do
         gunzip -k $file
     done
-    rm ${inputFolder}/deepvariant/*.g.vcf
+    rm -f ${inputFolder}/deepvariant/*.g.vcf
     for file in ${inputFolder}/deepvariant/*.vcf; do
         base=$(basename -- $file)
         folder="anno_germ"
