@@ -41,6 +41,8 @@ elif [ $command == 'cnvk19' ]; then
     bash ${scriptsDirectory}/run_cnvkit.sh
 elif [ $command == '2rus' ]; then
     python3 ${scriptsDirectory}/2rus.py $outputFolder
+elif [ $command == '2rus2' ]; then
+    python3 ${scriptsDirectory}/2rus2.py $outputFolder
 elif [ $command == 'cint' ]; then
     bash ${scriptsDirectory}/createIntervals.sh $outputFolder
 elif [ $command == 'aved' ]; then
