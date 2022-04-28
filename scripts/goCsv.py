@@ -142,7 +142,7 @@ def createCsv(extensionFilter, outputName, folder):
 
 def addFreq(folder):
     import pandas
-    with open(wd + '/combined_' + folder + '.csv', 'r') as inpObj:
+    with open(wd + '/combined_' + folder + '.tsv', 'r') as inpObj:
         DF = pandas.read_csv(inpObj, sep='\t')
     
     DF['VARIANT'] = DF['#CHROM'] + ':' + DF['POS'].astype(str) + ':' + DF['REF'] + '/' + DF['ALT']
@@ -160,7 +160,7 @@ def addFreq(folder):
         grvarDict[k] = ', '.join(str(whichSamples))
     DF['VAR_FREQ_WHICH'] = DF['VARIANT'].map(grvarDict)
 
-    with open(wd + '/combined_passed_' + folder + '.csv', 'r') as inpObj:
+    with open(wd + '/combined_passed_' + folder + '.tsv', 'r') as inpObj:
         DF = pandas.read_csv(inpObj, sep='\t')
     
     DF['VARIANT'] = DF['#CHROM'] + ':' + DF['POS'].astype(str) + ':' + DF['REF'] + '/' + DF['ALT']
@@ -173,13 +173,13 @@ def addFreq(folder):
     grDF = DF.groupby('SAMPLE')
 
     for df in grDF:
-        df[1].to_csv(wd + '/' + folder + str(df[0]) + '.csv', sep='\t', index=False)
+        df[1].to_csv(wd + '/' + folder + str(df[0]) + '.tsv', sep='\t', index=False)
 
     def many_vars(DF, l):
         return DF[DF['VARIANT'] == l][['SAMPLE', 'FORMAT_AF']]
 
 for folder in ['anno_soma', 'anno_germ']:
     if os.path.isdir(wd + '/' + folder): 
-        createCsv('vep.vcf.pass.vcf', '/combined_passed_' + folder + '.csv', folder)
-        createCsv('vep.vcf', '/combined_' + folder + '.csv', folder)
+        createCsv('vep.vcf.pass.vcf', '/combined_passed_' + folder + '.tsv', folder)
+        createCsv('vep.vcf', '/combined_' + folder + '.tsv', folder)
         addFreq(folder)

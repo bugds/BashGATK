@@ -259,7 +259,7 @@ rusDict = {
 }
 
 for folder in ['_anno_soma', '_anno_germ', '']:
-    for filename in ['/combined' + folder + '.csv', '/combined_passed_' + folder + '.csv']:
+    for filename in ['/combined' + folder + '.tsv', '/combined_passed_' + folder + '.tsv']:
         if os.path.exists(filename):
             df = pd.read_csv(wd + filename, sep = '\t')
             short_dict = dict()
@@ -270,8 +270,8 @@ for folder in ['_anno_soma', '_anno_germ', '']:
             df = df[short_dict.values()]
             df.to_csv(wd + filename.replace('combined', 'rus_combined'), sep = '\t', index = False, encoding = 'utf-8')
 
-    if os.path.exists(wd + '/combined_passed' + folder + '.csv'):
-        report_df = pd.read_csv(wd + '/combined_passed' + folder + '.csv', sep = '\t')
+    if os.path.exists(wd + '/combined_passed' + folder + '.tsv'):
+        report_df = pd.read_csv(wd + '/combined_passed' + folder + '.tsv', sep = '\t')
         good_functions = ['exonic', 'splicing']
         # good_functions = '|'.join(good_functions)
         
@@ -355,7 +355,7 @@ for folder in ['_anno_soma', '_anno_germ', '']:
         report_df = report_df.rename(columns = rusDict)
         rusDictValues = [v for v in report_df.columns if v in rusDict.values()]
         report_df = report_df[rusDictValues]
-        report_df.to_csv(wd + '/report' + folder + '.csv', sep = '\t', index = False)
+        report_df.to_csv(wd + '/report' + folder + '.tsv', sep = '\t', index = False)
         
         report_df['the_id'] = report_df[rusDict['#CHROM']] \
             + ':' \
@@ -393,4 +393,4 @@ for folder in ['_anno_soma', '_anno_germ', '']:
         
         short_report_df = short_report_df[new_columns]
         
-        short_report_df.to_csv(wd + '/short_report' + folder + '.csv', sep = '\t')
+        short_report_df.to_csv(wd + '/short_report' + folder + '.tsv', sep = '\t')
