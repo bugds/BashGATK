@@ -283,7 +283,7 @@ for folder in ['_anno_soma', '_anno_germ', '']:
         elif 'FORMAT_VAF' in report_df.columns:
             depth = 'FORMAT_DP'
             af = 'FORMAT_VAF'
-            vaf_df = report_df[report_df['FORMAT_VAF'].str.contains(',')].reset_index(drop = True)
+            vaf_df = report_df[report_df['FORMAT_VAF'].astype(str).str.contains(',')].reset_index(drop = True)
             alt_df = report_df[report_df['ALT'].str.contains(',')].reset_index(drop = True)
             if len(vaf_df) != len(alt_df):
                 dif_df = pd.concat([vaf_df, alt_df]).drop_duplicates(keep = False)
