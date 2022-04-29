@@ -41,7 +41,9 @@ rusDict = {
     'INFO_ANNO_fathmm-XF_coding_pred': 'PredFATHMM-XF',
     'INFO_ANNO_cosmic95_coding': 'COSMIC_кодир',
     'INFO_ANNO_cosmic95_noncoding': 'COSMIC_некодир',
-    'INFO_ANNO_CLNSIG': 'Клин_знач',
+    'INFO_ANNO_CLNSIG': 'Клин_знач_1',
+    'INFO_VEP_CLIN_SIG': 'Клин_знач_2',
+    'Клин_знач': 'Клин_знач',
     'INFO_ANNO_avsnp150': 'rsID'
 }
 
@@ -76,6 +78,7 @@ for k in dfd:
         dfd[k][p] = dfd[k][p].str.replace('N', 'T')
     dfd[k]['In_silico_прогноз'] = ''
     dfd[k]['Макс_попул_ч-та'] = ''
+    dfd[k]['Клин_знач'] = ''
     for i, r in dfd[k].iterrows():
         for c in rusDict.values():
             if isinstance(r[c], str):
@@ -97,8 +100,16 @@ for k in dfd:
             dfd[k].loc[i, 'Макс_попул_ч-та'] = r['Макс_попул_ч-та_1']
         else:
             dfd[k].loc[i, 'Макс_попул_ч-та'] = max([float(r['Макс_попул_ч-та_1']), float(r['Макс_попул_ч-та_2'])])
+        if r['Клин_знач_2'].lower() == r['Клин_знач_1'].lower():
+            dfd[k].loc[i, 'Клин_знач'] = r['Клин_знач_1'].lower()
+        elif r['Клин_знач_2'] == '.':
+            dfd[k].loc[i, 'Клин_знач'] = '?' + r['Клин_знач_1'].lower()
+        elif r['Клин_знач_1'] == '.':
+            dfd[k].loc[i, 'Клин_знач'] = '?' + r['Клин_знач_2'].lower()
+        else:
+            dfd[k].loc[i, 'Клин_знач'] = '?' + r['Клин_знач_1'].lower()
     dfd[k] = dfd[k].drop(columns = preds)
-    dfd[k] = dfd[k].drop(columns = ['Макс_попул_ч-та_1', 'Макс_попул_ч-та_2'])
+    dfd[k] = dfd[k].drop(columns = ['Макс_попул_ч-та_1', 'Макс_попул_ч-та_2', 'Клин_знач_1', 'Клин_знач_2'])
     dfd[k]['Доверие'] = ''
     dfd[k]['Макс_попул_ч-та'] = dfd[k]['Макс_попул_ч-та'].replace('.', -1)
     dfd[k].loc[dfd[k]['Глубина_прочтения'] < depth_limit, 'Доверие'] = 'Низк'
