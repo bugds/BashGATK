@@ -9,12 +9,12 @@ function getMetadata {
     substrings=$(echo $filename | tr '_' ' ')
 
     for s in $substrings; do
-        if [[ ${s:0:1} == "S" ]]; then 
+        if [[ ${s:0:1} == $nameSubString ]]; then 
             sample=${s:1}
             name=${s:1}
         # elif [[ ${s:0:3} == "MED" ]]; then
         #    name=$s
-        elif [[ ${s:0:1} == "L" ]]; then
+        elif [[ ${s:0:1} == $laneSubString ]]; then
             library=${s:1}
         elif [[ ${s:0:1} == "R" ]]; then
             if [[ ${s:1:2} == "1" ]]; then
@@ -251,9 +251,9 @@ makeDirectory sorted
 parallelRun sortAndFixTags "${outputFolder}merged/*.bam"
 sleep 1
 
-makeDirectory temporary_files/recal_reports
-parallelRun baseRecalibrator "${outputFolder}sorted/*.bam"
-sleep 1
+#makeDirectory temporary_files/recal_reports
+#parallelRun baseRecalibrator "${outputFolder}sorted/*.bam"
+#sleep 1
 
-makeDirectory recalibrated
-parallelRun applyBqsr "${outputFolder}sorted/*.bam"
+#makeDirectory recalibrated
+#parallelRun applyBqsr "${outputFolder}sorted/*.bam"

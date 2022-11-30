@@ -10,22 +10,23 @@ function makeDirectory {
 }
 
 function liftoverVcf {
-    if !( test -f "${outputFolder}annotation/$2_lifted.vcf" ); then
+    if !( test -f "${outputFolder}/annotation/$2_lifted.vcf" ); then
         $gatk LiftoverVcf \
             --INPUT $1 \
-            --OUTPUT "${outputFolder}annotation/$2_lifted.vcf" \
+            --OUTPUT ${outputFolder}/annotation/$2_lifted.vcf \
             --REFERENCE_SEQUENCE $refFasta \
             --CHAIN $chain \
-            --REJECT "${outputFolder}annotation/$2_rejected.vcf"
+            --REJECT ${outputFolder}/annotation/$2_prerejected.vcf
     fi
 }
 
 function checkRejected {
     # Coordinates
+    grep "MismatchedRefAllele" ${outputFolder}/annotation/$1_prerejected.vcf > ${outputFolder}/annotation/$1_rejected.vcf
     cat ${outputFolder}/annotation/$1_rejected.vcf | grep -v ^## | awk -F 'AttemptedLocus=' '{print $2}' | cut -d ";" -f 1 | cut -d "=" -f 2 | tail -n +2 | sed "s/:/\t/" | sed "s/-/\t/" > ${outputFolder}/annotation/$1_rejected.bed
-    cat ${outputFolder}/annotation/$1_rejected.bed | grep . | awk -F '\t' '{ printf("%s\t%s\t%d\n", $1, $2-1, $3) }' > ${outputFolder}/annotation/$1_rejected_plus.bed
+    cat ${outputFolder}/annotation/$1_rejected.bed | awk -F '\t' '{ printf("%s\t%s\t%d\n", $1, $2-1, $3) }' > ${outputFolder}/annotation/$1_rejected_plus.bed
     # Nucleotides
-    if [[ $(diff <(cat ${outputFolder}annotation/$1_rejected.vcf | grep -v ^## | cut -f 5 | tail -n +2) <($bedtools getfasta -fi $refFasta -bed ${outputFolder}/annotation/$1_rejected_plus.bed | sed -n 'n;p')) ]]; then
+    if [[ $(diff <(cat ${outputFolder}/annotation/$1_rejected.vcf | grep -v ^## | cut -f 5 | tail -n +2) <($bedtools getfasta -fi $refFasta -bed ${outputFolder}/annotation/$1_rejected_plus.bed | sed -n 'n;p')) ]]; then
         echo "$1 is bad"
         exit 1
     else
@@ -73,3 +74,5 @@ for file in ${outputFolder}annotation/*.anno.vcf; do
     annotateVep $base
     onlyPASS $base
 done
+
+

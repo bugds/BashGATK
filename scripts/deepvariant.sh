@@ -24,14 +24,14 @@ function makeDirectory {
 function runDeepvariant {
     makeDirectory "deepvariant"
     
-    files=${outputFolder}recalibrated/*.bam
+    files=${outputFolder}sorted/*.bam
 
     for bam in $files; do
         local bamName=$(basename -- $bam | cut -f1 -d '.')
         local baseName=$(basename -- $bam)
         
-        sudo docker run \
-          -v ${outputFolder}recalibrated:"/input" \
+        docker run \
+          -v ${outputFolder}sorted:"/input" \
           -v ${outputFolder}deepvariant:"/output" \
           -v ${refFolder}:"/reference" \
           google/deepvariant:${binVersion} \
