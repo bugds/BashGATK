@@ -113,4 +113,11 @@ elif [[ $command == 'qgen' ]]; then
     # annotationQiagen.sh
     export chain='/home/bioinfuser/data/hg38/hg19ToHg38.over.chain'
     export bedtools='/home/bioinfuser/applications/bedtools.static.binary'
+elif [[ $command == 'afcvfc' ]]; then
+    # create_variants_for_contamination_only_af.sh
+    export wd='/home/bioinfuser/data/kapa_hyperexome_files'
+    export regions='/home/bioinfuser/data/kapa_hyperexome_files/KAPA_HyperExome_hg38_capture_targets.bed'
+    export gnomad='/home/bioinfuser/data/hg38/gnomad/somatic-hg38_af-only-gnomad.hg38.vcf'
+    export minimumAlleleFrequency=0.05
+    export javaOpt="-Xms3000m"
 fi
