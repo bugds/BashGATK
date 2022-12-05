@@ -18,7 +18,7 @@ export platform=ILLUMINA
 
 if [[ $command == 'proc' ]]; then
     # parallelProcessing.sh
-    export opticalPixelDistance=100
+    export opticalPixelDistance=100 #In general, a pixel distance of 100 is recommended for data generated using unpatterned flowcells (e.g. HiSeq2500) and a pixel distance of 2500 is recommended for patterned flowcells (e.g. NovaSeq/HiSeq4000).
     export nameSubString='N'
     export laneSubString='L'
     export fastqc='/home/bioinfuser/applications/FastQC/fastqc'
