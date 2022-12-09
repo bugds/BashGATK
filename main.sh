@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# This is the main file
+
 set -e
 set -o pipefail
 
