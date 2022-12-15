@@ -120,4 +120,17 @@ elif [[ $command == 'afcvfc' ]]; then
     export gnomad='/home/bioinfuser/data/hg38/gnomad/somatic-hg38_af-only-gnomad.hg38.vcf'
     export minimumAlleleFrequency=0.05
     export javaOpt="-Xms3000m"
+elif [[ $command == 'kapaumi' ]]; then
+    # kapaumi.sh
+    export opticalPixelDistance=100 #In general, a pixel distance of 100 is recommended for data generated using unpatterned flowcells (e.g. HiSeq2500) and a pixel distance of 2500 is recommended for patterned flowcells (e.g. NovaSeq/HiSeq4000).
+    export nameSubString='N'
+    export laneSubString='L'
+    export fastp='/home/bioinfuser/applications/fastp/fastp'
+    export fgbio='java -jar /home/bioinfuser/applications/fgbio/fgbio-2.0.2.jar'
+    export inputFolder="${outputFolder}/fastq/"
+    export regions='/home/bioinfuser/data/kapa_hyperexome_files/KAPA_HyperExome_hg38_capture_targets.bed'
+    export bwaVersion="$($bwa 2>&1 | grep -e '^Version' | sed 's/Version: //')"
+    export bwaCommandline="$bwa mem -K 100000000 -p -v 3 -t 16 -Y $refFasta"
+    export parallelJobs=3
+    export lane=1
 fi

@@ -49,4 +49,6 @@ elif [ $command == 'aved' ]; then
     bash ${scriptsDirectory}/averageDepth.sh $outputFolder
 elif [ $command == 'afcvfc' ]; then
     bash ${scriptsDirectory}/create_variants_for_contamination_only_af.sh $outputFolder
+elif [ $command == 'kapaumi' ]; then
+    bash ${scriptsDirectory}/kapaumi.sh $outputFolder
 fi
