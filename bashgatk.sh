@@ -53,4 +53,6 @@ elif [ $command == 'kumi' ]; then
     bash ${scriptsDirectory}/kapaumi.sh $outputFolder
 elif [ $command == 'acmg' ]; then
     python3 ${scriptsDirectory}/acmg_classifier.py $outputFolder
+elif [ $command == 'mask' ]; then
+    bash ${scriptsDirectory}/create_gene_mask.py
 fi

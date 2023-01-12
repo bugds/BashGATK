@@ -139,4 +139,7 @@ elif [[ $command == '2rus2' ]]; then
     export depth_limit=20
     export af_limit=0.02
     export paf_limit=0.05
+elif [[ $command == 'mask' ]]; then
+    export refGene='/home/bioinfuser/applications/annovar/humandb'
+    export maskGenes='/home/bioinfuser/data/kapa_hyperexome_files/mask_genes'
 fi
