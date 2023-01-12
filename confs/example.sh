@@ -1,5 +1,6 @@
 # bashgatk.sh
 
+export outputFolder=''
 export scriptsDirectory='/home/bioinfuser/applications/BashGATK/scripts'
 export gatk='/home/bioinfuser/applications/gatk-4.2.5.0/gatk'
 export samtools='/home/bioinfuser/applications/samtools-1.3.1/samtools'
@@ -140,6 +141,8 @@ elif [[ $command == '2rus2' ]]; then
     export af_limit=0.02
     export paf_limit=0.05
 elif [[ $command == 'mask' ]]; then
-    export refGene='/home/bioinfuser/applications/annovar/humandb'
+    export reference='/home/bioinfuser/data/hg38/gencode_v42_genes.gff3'
     export maskGenes='/home/bioinfuser/data/kapa_hyperexome_files/mask_genes'
+    export bedtools='/home/bioinfuser/applications/bedtools.static.binary'
+    export generateBed='no'
 fi
