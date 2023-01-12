@@ -20,15 +20,13 @@ function parallelRun {
 
 function getMetadata {
     filename=$(basename -- $1)
-    
-    substrings=$(echo $filename | tr '_' ' ')
+    presubstrings=$(echo $filename | cut -d '.' -f1)
+    substrings=$(echo $presubstrings | tr '_' ' ')
 
     for s in $substrings; do
         if [[ ${s:0:1} == $nameSubString ]]; then 
             sample=${s:1}
             name=${s:1}
-        # elif [[ ${s:0:3} == "MED" ]]; then
-        #    name=$s
         elif [[ ${s:0:1} == $laneSubString ]]; then
             lane=${s:1}
         elif [[ ${s:0:1} == "R" ]]; then
@@ -40,6 +38,7 @@ function getMetadata {
         fi
     done
 }
+export -f getMetadata
 
 function forwardToReverse {
     local forwardPath=$1
@@ -55,6 +54,7 @@ function forwardToReverse {
         exit 1
     fi
 }
+export -f forwardToReverse
 
 function fastqToSam {
     local basename=$(basename -- $forward)
@@ -68,17 +68,26 @@ function fastqToSam {
         -LB "Lib" \
         -PL $platform
 }
+export -f fastqToSam
+
+# function pairedFastQsToUnmappedBAM {
+#     local files="${outputFolder}fastq/*"
+#     for forward in $files; do
+#         getMetadata $forward
+#         if $direction; then
+#             forwardToReverse $forward
+#             fastqToSam
+#         fi
+#     done
+# }
 
 function pairedFastQsToUnmappedBAM {
-    local files="${outputFolder}trimmed/*"
-
-    for forward in $files; do
-        getMetadata $forward
-        if $direction; then
-            forwardToReverse $forward
-            fastqToSam
-        fi
-    done
+    forward=$1
+    getMetadata $forward
+    if $direction; then
+        forwardToReverse $forward
+        fastqToSam
+    fi
 }
 
 function validateSam {
@@ -110,16 +119,7 @@ function extractUMIs {
         -r 3M3S+T 3M3S+T \
         -t RX \
         -a true \
-        -o "${outputFolder}UMIs_extracted/${output}.ubam"
-}
-
-function samToFastq {
-    $gatk SamToFastq \
-        -i $1 \
-        -F $2 \
-        -F2 $3 \
-        --CLIPPING_ATTRIBUTE XT \
-        --CLIPPING_ACTION 2
+        -o "${outputFolder}UMIs_extracted/${output}.bam"
 }
 
 function qcAndAlign {
@@ -127,24 +127,30 @@ function qcAndAlign {
     local output=$(echo $bam | cut -f 1 -d '.')
     local javaOpt="-Xms3000m"
 
-    samToFastq \
-        $1 \
-        "${outputFolder}fastq_for_qc/${output}_R1.fastq" \
-        "${outputFolder}fastq_for_qc/${output}_R2.fastq"
+    inputSam=$1
+
+    $gatk SamToFastq \
+        -I $inputSam \
+        -F "${outputFolder}fastq_for_qc/${output}_R1.fastq.gz" \
+        -F2 "${outputFolder}fastq_for_qc/${output}_R2.fastq.gz" \
+        --CLIPPING_ATTRIBUTE XT \
+        --CLIPPING_ACTION 2
     
     $fastp \
-        -i "${outputFolder}fastq_for_qc/${output}_R1.fastq" \
-        -o "${outputFolder}fastq_trimmed/${output}_R1.fastq" \
-        -I "${outputFolder}fastq_for_qc/${output}_R2.fastq" \
-        -O "${outputFolder}fastq_trimmed/${output}_R2.fastq" \
+        -i "${outputFolder}fastq_for_qc/${output}_R1.fastq.gz" \
+        -o "${outputFolder}fastq_trimmed/${output}_R1.fastq.gz" \
+        -I "${outputFolder}fastq_for_qc/${output}_R2.fastq.gz" \
+        -O "${outputFolder}fastq_trimmed/${output}_R2.fastq.gz" \
         -g -W 5 -q 20 -u 40 -x -3 -l 75 -c \
         -j "${outputFolder}fastq_trimmed/${output}_fastp.json" \
         -h "${outputFolder}fastq_trimmed/${output}_fastp.html" \
+        --adapter_sequence=AGATCGGAAGAGCACACGTCTGAACTCCAGTCA \
+        --adapter_sequence_r2=AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT \
         -w 12
-
+    
     ${bwaCommandline1} \
-        "${outputFolder}fastq_trimmed/${output}_R1.fastq" \
-        "${outputFolder}fastq_trimmed/${output}_R2.fastq" \
+        "${outputFolder}fastq_trimmed/${output}_R1.fastq.gz" \
+        "${outputFolder}fastq_trimmed/${output}_R2.fastq.gz" \
     | \
     $samtools view -Sb > "${outputFolder}unmerged/${output}.bam"
 
@@ -165,28 +171,47 @@ function qcAndAlign {
         --CLIP_OVERLAPPING_READS false
 }
 
+# function mergeSamFiles {
+#     local javaOpt="-Xms4000m"
+#     local files="${outputFolder}premerged/*"
+# 
+#     for file in $files; do
+#         filename=$(basename -- $file)
+#         
+#         substrings=$(echo $filename | tr '_' ' ')
+#         for s in $substrings; do
+#             if [[ ${s:0:1} == $nameSubString ]]; then
+#                 name=${s:0}
+#             fi
+#         done
+#         if [ ! -f "${outputFolder}merged/${name}.bam" ]; then
+#             echo $name
+#             $samtools merge -r \
+#                 ${outputFolder}merged/${name}.bam \
+#                 ${outputFolder}premerged/*${name}*
+#         fi
+#     done
+# }
+
 function mergeSamFiles {
     local javaOpt="-Xms4000m"
-    local files="${outputFolder}premerged/*"
 
-    for file in $files; do
-        filename=$(basename -- $file)
+    filename=$(basename -- $1)
         
-        substrings=$(echo $filename | tr '_' ' ')
+    substrings=$(echo $filename | tr '_' ' ')
 
-        for s in $substrings; do
-            if [[ ${s:0:1} == $nameSubString ]]; then
-                name=${s:0}
-            fi
-        done
-
-        if [ ! -f "${outputFolder}merged/${name}.bam" ]; then
-            echo $name
-            $samtools merge -r \
-                ${outputFolder}merged/${name}.bam \
-                ${outputFolder}premerged/*${name}*
+    for s in $substrings; do
+        if [[ ${s:0:1} == $nameSubString ]]; then
+            name=${s:0}
         fi
     done
+
+    if [ ! -f "${outputFolder}merged/${name}.bam" ]; then
+        echo $name
+        $samtools merge -r \
+            ${outputFolder}merged/${name}.bam \
+            ${outputFolder}premerged/*${name}*
+    fi
 }
 
 function onlyProperPairs {
@@ -227,17 +252,45 @@ function realign {
     local bam=$(basename -- "$1")
     local output=$(echo $bam | cut -f 1 -d '.')
     local javaOpt="-Xms3000m"
+  
+    inputSam=$1
 
-    samToFastq \
-        $1 \
-        "${outputFolder}fastq_for_realignment/${output}_R1.fastq" \
-        "${outputFolder}fastq_for_realignment/${output}_R2.fastq"
+    $gatk SamToFastq \
+        -I $inputSam \
+        -F "${outputFolder}fastq_for_realignment/${output}_R1.fastq" \
+        -F2 "${outputFolder}fastq_for_realignment/${output}_R2.fastq" \
+        --CLIPPING_ATTRIBUTE XT \
+        --CLIPPING_ACTION 2
 
     ${bwaCommandline2} \
         "${outputFolder}fastq_for_realignment/${output}_R1.fastq" \
         "${outputFolder}fastq_for_realignment/${output}_R2.fastq" \
     | \
     $samtools view -bh > "${outputFolder}realigned/${output}.bam"
+    
+    $gatk --java-options "-Dsamjdk.compression_level=${compressionLevel} ${javaOpt}" \
+      SortSam \
+        --INPUT "${outputFolder}reads_called/${output}.bam" \
+        --OUTPUT "${outputFolder}reads_called/${output}_sorted.bam" \
+        --SORT_ORDER "queryname" \
+        --CREATE_INDEX false \
+        --CREATE_MD5_FILE false \
+
+    $gatk --java-options "-Dsamjdk.compression_level=${compressionLevel} ${javaOpt}" \
+      MergeBamAlignment \
+        --ATTRIBUTES_TO_RETAIN X0 \
+        --ATTRIBUTES_TO_REMOVE NM \
+        --ATTRIBUTES_TO_REMOVE MD \
+        --ALIGNED_BAM "${outputFolder}realigned/${output}.bam" \
+        --UNMAPPED_BAM "${outputFolder}reads_called/${output}_sorted.bam" \
+        --OUTPUT "${outputFolder}realigned_merged/${output}.bam" \
+        --REFERENCE_SEQUENCE ${refFasta} \
+        --SORT_ORDER "queryname" \
+        --ALIGNED_READS_ONLY true \
+        --MAX_INSERTIONS_OR_DELETIONS -1 \
+        --PRIMARY_ALIGNMENT_STRATEGY MostDistant \
+        --ALIGNER_PROPER_PAIR_FLAGS true \
+        --CLIP_OVERLAPPING_READS false
 }
 
 function sortAndFixTags {
@@ -297,10 +350,34 @@ function applyBqsr {
 # USING -L OPTION SHOULD BE AVOIDED: MATE PAIRS DISAPPEAR
 }
 
+function querynameSort {
+    local javaOpt="-Xms4000m"
+    local bamName=$(basename -- ${1} | cut -d "." -f 1)
+    
+    mv $1 ${1}_temp
+    $samtools sort -n ${1}_temp > $1
+}
+
+
+function markDuplicates {
+    local javaOpt="-Xms4000m"
+
+    $gatk --java-options "-Dsamjdk.compression_level=${compressionLevel} ${javaOpt}" \
+      MarkDuplicates \
+        --INPUT $1 \
+        --OUTPUT ${outputFolder}duplicates_marked/$(basename -- ${1}) \
+        --METRICS_FILE ${outputFolder}duplicates_marked/$(basename -- ${1}).mtrx \
+        --VALIDATION_STRINGENCY SILENT \
+        --OPTICAL_DUPLICATE_PIXEL_DISTANCE 2500 \
+        --SORTING_COLLECTION_SIZE_RATIO 0.25 \
+        --ASSUME_SORT_ORDER queryname \
+        --CREATE_MD5_FILE true
+}
+
 # MAIN
 
 makeDirectory unmapped
-pairedFastQsToUnmappedBAM
+parallelRun pairedFastQsToUnmappedBAM "${outputFolder}fastq/*"
 sleep 1
 
 makeDirectory temporary_files
@@ -317,9 +394,20 @@ makeDirectory premerged
 parallelRun qcAndAlign "${outputFolder}UMIs_extracted/*"
 sleep 1
 
-makeDirectory merged
-mergeSamFiles
+rm -r "${outputFolder}fastq_for_qc"
+rm -r "${outputFolder}fastq_trimmed"
+rm -r "${outputFolder}unmerged"
 sleep 1
+
+makeDirectory merged
+parallelRun mergeSamFiles "${outputFolder}premerged/*"
+sleep 1
+
+rm -r "${outputFolder}unmapped"
+rm -r "${outputFolder}premerged"
+sleep 1
+
+### SOMATIC PART
 
 makeDirectory only_proper
 parallelRun onlyProperPairs "${outputFolder}merged/*"
@@ -329,12 +417,24 @@ makeDirectory reads_grouped
 makeDirectory reads_called
 parallelRun groupSameUMIReads "${outputFolder}only_proper/*"
 
+rm -r "${outputFolder}only_proper"
+sleep 1
+
 makeDirectory fastq_for_realignment
 makeDirectory realigned
+makeDirectory realigned_merged
 parallelRun realign "${outputFolder}reads_called/*"
 
+rm -r "${outputFolder}reads_grouped"
+rm -r "${outputFolder}reads_called"
+sleep 1
+
 makeDirectory sorted
-parallelRun sortAndFixTags "${outputFolder}realigned/*.bam"
+parallelRun sortAndFixTags "${outputFolder}realigned_merged/*.bam"
+sleep 1
+
+rm -r "${outputFolder}fastq_for_realignment"
+rm -r "${outputFolder}realigned"
 sleep 1
 
 makeDirectory temporary_files/recal_reports
@@ -343,3 +443,18 @@ sleep 1
 
 makeDirectory recalibrated
 parallelRun applyBqsr "${outputFolder}sorted/*.bam"
+
+rm -r "${outputFolder}sorted"
+sleep 1
+
+### GERMINAL PART
+
+parallelRun querynameSort "${outputFolder}merged/*.bam"
+sleep 1
+makeDirectory duplicates_marked
+parallelRun markDuplicates "${outputFolder}merged/*.bam"
+sleep 1
+
+makeDirectory sorted
+parallelRun sortAndFixTags "${outputFolder}duplicates_marked/*.bam"
+sleep 1
