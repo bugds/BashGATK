@@ -1,7 +1,7 @@
 import os
 import sys
 
-wd = os.path.abspath(sys.argv[1])
+wd = os.environ['outputFolder']
 
 global innerDelimeter
 global outerDelimeter

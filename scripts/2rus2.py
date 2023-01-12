@@ -8,8 +8,7 @@ af_limit = float(os.environ['af_limit'])
 print('Allele frequency limit:', af_limit)
 paf_limit = float(os.environ['paf_limit'])
 print('Minor allele frequency limit:', paf_limit)
-
-wd = os.path.abspath(sys.argv[1])
+wd = os.environ['outputFolder']
 
 rusDict = {
     'SAMPLE': 'Проба',
