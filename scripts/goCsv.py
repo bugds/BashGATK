@@ -157,7 +157,7 @@ def addFreq(folder):
         whichSamples = []
         for l in grvarDF.groups[k]:
             whichSamples.append(DF['SAMPLE'][l])
-        grvarDict[k] = ', '.join(str(whichSamples))
+        grvarDict[k] = ', '.join([str(i) for i in whichSamples])
     DF['VAR_FREQ_WHICH'] = DF['VARIANT'].map(grvarDict)
 
     with open(wd + '/combined_passed_' + folder + '.tsv', 'r') as inpObj:
