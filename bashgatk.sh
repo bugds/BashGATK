@@ -5,7 +5,6 @@ set -o pipefail
 
 export command=$1
 export config=$2
-export outputFolder="$(realpath $3)/"
 
 source $config
 
@@ -28,9 +27,9 @@ elif [ $command == 'btil' ]; then
 elif [ $command == 'cvfc' ]; then
     bash ${scriptsDirectory}/create_variants_for_contamination.sh
 elif [ $command == '2csv' ]; then
-    python3 ${scriptsDirectory}/goCsv.py $outputFolder
+    python3 ${scriptsDirectory}/goCsv.py
 elif [ $command == '2csvq' ]; then
-    python3 ${scriptsDirectory}/goCsvQiagen.py $outputFolder
+    python3 ${scriptsDirectory}/goCsvQiagen.py
 elif [ $command == 'cnvk' ]; then
     bash ${scriptsDirectory}/run_cnvkit.sh
 elif [ $command == 'deep' ]; then
@@ -39,20 +38,18 @@ elif [ $command == 'deep19' ]; then
     bash ${scriptsDirectory}/deepvariant.sh
 elif [ $command == 'cnvk19' ]; then
     bash ${scriptsDirectory}/run_cnvkit.sh
-elif [ $command == '2rus' ]; then
-    python3 ${scriptsDirectory}/2rus.py $outputFolder
 elif [ $command == '2rus2' ]; then
-    python3 ${scriptsDirectory}/2rus2.py $outputFolder
+    python3 ${scriptsDirectory}/2rus2.py
 elif [ $command == 'cint' ]; then
-    bash ${scriptsDirectory}/createIntervals.sh $outputFolder
+    bash ${scriptsDirectory}/createIntervals.sh
 elif [ $command == 'aved' ]; then
-    bash ${scriptsDirectory}/averageDepth.sh $outputFolder
+    bash ${scriptsDirectory}/averageDepth.sh
 elif [ $command == 'afcvfc' ]; then
     bash ${scriptsDirectory}/create_variants_for_contamination_only_af.sh $outputFolder
 elif [ $command == 'kumi' ]; then
-    bash ${scriptsDirectory}/kapaumi.sh $outputFolder
+    bash ${scriptsDirectory}/kapaumi.sh
 elif [ $command == 'acmg' ]; then
-    python3 ${scriptsDirectory}/acmg_classifier.py $outputFolder
+    python3 ${scriptsDirectory}/acmg_classifier.py
 elif [ $command == 'mask' ]; then
-    bash ${scriptsDirectory}/create_gene_mask.py
+    python3 ${scriptsDirectory}/create_gene_mask.py
 fi
