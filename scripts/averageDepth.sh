@@ -33,5 +33,5 @@ function getDepths {
 }
 
 makeDirectory depths
-parallelRun getDepths "${outputFolder}recalibrated/*.bam"
+parallelRun getDepths "${outputFolder}duplicates_marked/*.bam"
 cat ${outputFolder}depths/*.txt > "${outputFolder}depths/depthReport.txt"
