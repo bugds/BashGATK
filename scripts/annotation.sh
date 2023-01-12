@@ -1,6 +1,13 @@
 set -e
 set -o pipefail
 
+function parallelRun {  
+    local files=$2
+
+    export -f $1
+    parallel -j $parallelJobs $1 ::: $files
+}
+
 function makeDirectory {
     local newDirectory=$1
 
@@ -8,6 +15,7 @@ function makeDirectory {
         mkdir "${outputFolder}${newDirectory}/"
     fi
 }
+export -f makeDirectory
 
 function decomposeNormalize {
     $bcftools \
@@ -21,6 +29,7 @@ function decomposeNormalize {
         -o ${outputFolder}/${3}/${2}_step2 \
         ${outputFolder}/${3}/${2}_step1
 }
+export -f decomposeNormalize
 
 function annotateAnnovar {
     $annovar \
@@ -36,6 +45,7 @@ function annotateAnnovar {
         -xreffile $xreffile \
         -vcfinput
 }
+export -f annotateAnnovar
 
 function annotateVep {
     $vep \
@@ -46,39 +56,34 @@ function annotateVep {
         -i ${outputFolder}/${2}/${1}_anno.hg38_multianno.vcf \
         -o ${outputFolder}/${2}/${1}_vep.vcf
 }
+export -f annotateVep
 
 function onlyPASS {
     local file=${outputFolder}/${2}/${1}_vep.vcf
 
     awk -F '\t' '{if($0 ~ /\#/) print; else if($7 == "PASS") print}' $file > ${file}.pass.vcf
 }
+export -f onlyPASS
+
+function annotate {
+    base=$(basename -- $1)
+    makeDirectory $folder
+    decomposeNormalize $1 $base $folder
+    annotateAnnovar $base $folder
+    annotateVep $base $folder
+    onlyPASS $base $folder
+}
 
 if [[ -d "${inputFolder}/mutect2" ]]
 then
-    for file in ${inputFolder}/mutect2/*/*.filtered.vcf; do
-        base=$(basename -- $file)
-        folder="anno_soma"
-        makeDirectory $folder
-        decomposeNormalize $file $base $folder
-        annotateAnnovar $base $folder
-        annotateVep $base $folder
-        onlyPASS $base $folder
-    done
+    folder="anno_soma"
+    parallelRun annotate ${inputFolder}/mutect2/*/*.filtered.vcf
 fi
 
 if [[ -d "${inputFolder}/deepvariant" ]]
 then
-    for file in ${inputFolder}/deepvariant/*.vcf.gz; do
-        gunzip -k -f $file
-    done
+    folder="anno_germ"
+    gunzip -k -f ${inputFolder}/deepvariant/*.vcf.gz
     rm -f ${inputFolder}/deepvariant/*.g.vcf
-    for file in ${inputFolder}/deepvariant/*.vcf; do
-        base=$(basename -- $file)
-        folder="anno_germ"
-        makeDirectory $folder
-        decomposeNormalize $file $base $folder
-        annotateAnnovar $base $folder
-        annotateVep $base $folder
-        onlyPASS $base $folder
-    done
+    parallelRun annotate ${inputFolder}/mutect2/*/*.filtered.vcf
 fi
