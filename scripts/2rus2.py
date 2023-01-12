@@ -2,9 +2,12 @@ import os
 import sys
 import pandas as pd
 
-depth_limit = 20
-af_limit = 0.02
-paf_limit = 0.05
+depth_limit = int(os.environ['depth_limit'])
+print('Depth limit:', depth_limit)
+af_limit = float(os.environ['af_limit'])
+print('Allele frequency limit:', af_limit)
+paf_limit = float(os.environ['paf_limit'])
+print('Minor allele frequency limit:', paf_limit)
 
 wd = os.path.abspath(sys.argv[1])
 

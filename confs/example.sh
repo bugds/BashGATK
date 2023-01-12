@@ -134,4 +134,9 @@ elif [[ $command == 'kapaumi' ]]; then
     export bwaCommandline2="$bwa mem -v 3 -t 8 -Y -M $refFasta"
     export parallelJobs=3
     export lane=1
+elif [[ $command == '2rus2' ]]; then
+    # 2rus2.py
+    export depth_limit=20
+    export af_limit=0.02
+    export paf_limit=0.05
 fi
