@@ -2,9 +2,9 @@ import os
 import sys
 import pandas as pd
 
-depth_limit = 100
+depth_limit = 20
 af_limit = 0.02
-paf_limit = 0.01
+paf_limit = 0.05
 
 wd = os.path.abspath(sys.argv[1])
 
@@ -17,6 +17,7 @@ rusDict = {
     'FORMAT_AF': 'Аллельная_частота',
     'FORMAT_VAF': 'Аллельная_частота',
     'FORMAT_DP': 'Глубина_прочтения',
+    'FORMAT_GT': 'Генотип',
     'INFO_ANNO_Gene.refGene': 'Ген',
     'INFO_ANNO_Func.refGene': 'Последствие',
     'INFO_ANNO_ExonicFunc.refGene': 'Кодирующее_последствие',
@@ -42,9 +43,7 @@ rusDict = {
     'INFO_ANNO_cosmic95_coding': 'COSMIC_кодир',
     'INFO_ANNO_cosmic95_noncoding': 'COSMIC_некодир',
     'INFO_ANNO_CLNSIG': 'Клин_знач',
-#    'INFO_ANNO_CLNSIG': 'Клин_знач_1',
-#    'INFO_VEP_CLIN_SIG': 'Клин_знач_2',
-#    'Клин_знач': 'Клин_знач',
+    'INFO_ANNO_CLNDN': 'Клин_диаг',
     'INFO_ANNO_avsnp150': 'rsID'
 }
 
@@ -65,6 +64,36 @@ preds = [
     'PredFATHMM-XF'
 ]
 
+def replace_x3b(string):
+    if isinstance(string, str):
+        string = string.replace('\\', '/')
+        return string.replace('/x3b', ';')
+
+def manage_x3d(string):
+    if 'x3d' in string:
+        string = string.replace('\\', '/')
+        #string = string.split('/x3d')[1].split(';')[0]
+    return string.replace('/x3d', '=')
+
+def manage_preds(curr_preds):
+    if ('D' in curr_preds) and not ('T' in curr_preds):
+        return 'Поврежд'
+    elif ('T' in curr_preds) and not ('D' in curr_preds):
+        return 'Нейтрал'
+    else:
+        return '.'
+
+def cosmsum(cosmlist):
+    sums = list()
+    for cosm in cosmlist:
+        curr_sum = 0
+        if '=' in cosm:
+            cosmdigits = cosm.split('=')[-1].split(',')
+            cosmdigits = [int(d.split('(')[0]) for d in cosmdigits]
+            curr_sum = sum(cosmdigits)
+        sums.append(curr_sum)
+    return max(sums)
+
 dfd = dict()
 if os.path.exists(wd + '/combined_passed_anno_germ.tsv'):
     dfd['germ'] = pd.read_csv(wd + '/combined_passed_anno_germ.tsv', sep = '\t')
@@ -78,60 +107,59 @@ if len(dfd) == 0:
 else:
     for k in dfd:
         dfd[k] = dfd[k].rename(columns = rusDict)
+        print('Columns renamed')
         for p in preds:
             dfd[k][p] = dfd[k][p].str.replace('H', 'D')
             dfd[k][p] = dfd[k][p].str.replace('B', 'T')
             dfd[k][p] = dfd[k][p].str.replace('N', 'T')
+        print('Predictions reassessed')
         dfd[k]['In_silico_прогноз'] = ''
         dfd[k]['Макс_попул_ч-та'] = ''
-    #    dfd[k]['Клин_знач'] = ''
-        for i, r in dfd[k].iterrows():
-            for c in rusDict.values():
-                if isinstance(r[c], str):
-                    dfd[k].loc[i, c] = r[c].replace('\\x3b', ';')
-            for cosm in ['COSMIC_кодир', 'COSMIC_некодир']:
-                if '\\x3d' in r[cosm]:
-                    dfd[k].loc[i, cosm] = r[cosm].split('\\x3d')[1]
-                dfd[k].loc[i, cosm] = dfd[k].loc[i, cosm].split('\\x3b')[0]
-            result = '.'
-            curr_preds = set([r[p] for p in preds])
-            if ('D' in curr_preds) and not ('T' in curr_preds):
-                result = 'Поврежд'
-            elif ('T' in curr_preds) and not ('D' in curr_preds):
-                result = 'Толерантн'
-            dfd[k].loc[i, 'In_silico_прогноз'] = result
-            if r['Макс_попул_ч-та_1'] == '.':
-                dfd[k].loc[i, 'Макс_попул_ч-та'] = r['Макс_попул_ч-та_2']
-            elif r['Макс_попул_ч-та_2'] == '.':
-                dfd[k].loc[i, 'Макс_попул_ч-та'] = r['Макс_попул_ч-та_1']
-            else:
-                dfd[k].loc[i, 'Макс_попул_ч-та'] = max([float(r['Макс_попул_ч-та_1']), float(r['Макс_попул_ч-та_2'])])
-    #        if r['Клин_знач_2'].lower() == r['Клин_знач_1'].lower():
-    #            dfd[k].loc[i, 'Клин_знач'] = r['Клин_знач_1'].lower()
-    #        elif r['Клин_знач_2'] == '.':
-    #            dfd[k].loc[i, 'Клин_знач'] = '?' + r['Клин_знач_1'].lower()
-    #        elif r['Клин_знач_1'] == '.':
-    #            dfd[k].loc[i, 'Клин_знач'] = '?' + r['Клин_знач_2'].lower()
-    #        else:
-    #            dfd[k].loc[i, 'Клин_знач'] = '?' + r['Клин_знач_1'].lower()
+        for c in [i for i in rusDict.values() if not (i in ['Позиция', 'Аллельная_частота', 'Глубина_прочтения'])]:
+            dfd[k][c] = dfd[k][c].map(replace_x3b)
+        print('Replaced HEX ;')
+        dfd[k]['COSMIC_кодир'] = dfd[k]['COSMIC_кодир'].map(manage_x3d)
+        dfd[k]['COSMIC_некодир'] = dfd[k]['COSMIC_некодир'].map(manage_x3d)
+        dfd[k]['Сумма_COSMIC'] = dfd[k][['COSMIC_кодир', 'COSMIC_некодир']].astype(str).apply(cosmsum, axis=1)
+        print('Replaced HEX =')
+        dfd[k]['In_silico_прогноз'] = dfd[k][preds].astype(str).apply(''.join, axis=1)
+        dfd[k]['In_silico_прогноз'] = dfd[k]['In_silico_прогноз'].map(manage_preds)
+        print('Single prognosis done')
+        dfd[k]['Макс_попул_ч-та_1'] = dfd[k]['Макс_попул_ч-та_1'].replace('.', -1)
+        dfd[k]['Макс_попул_ч-та_2'] = dfd[k]['Макс_попул_ч-та_2'].replace('.', -1)
+        dfd[k]['Макс_попул_ч-та'] = dfd[k][['Макс_попул_ч-та_1', 'Макс_попул_ч-та_2']].astype(float).apply(max, axis=1)
+        print('Single MAF done')
         dfd[k] = dfd[k].drop(columns = preds)
         dfd[k] = dfd[k].drop(columns = ['Макс_попул_ч-та_1', 'Макс_попул_ч-та_2'])
-    #    dfd[k] = dfd[k].drop(columns = ['Клин_знач_1', 'Клин_знач_2'])
+        print('Excessive columns dropped')
         dfd[k]['Доверие'] = ''
-        dfd[k]['Макс_попул_ч-та'] = dfd[k]['Макс_попул_ч-та'].replace('.', -1)
         dfd[k].loc[dfd[k]['Глубина_прочтения'] < depth_limit, 'Доверие'] = 'Низк'
         dfd[k].loc[dfd[k]['Аллельная_частота'] < af_limit ,'Доверие'] = 'Низк'
         dfd[k].loc[dfd[k]['Макс_попул_ч-та'].astype(float) > paf_limit, 'Доверие'] = 'Низк'
         dfd[k].loc[dfd[k]['Доверие'] == '', 'Доверие'] = 'Выс'
         dfd[k]['Макс_попул_ч-та'] = dfd[k]['Макс_попул_ч-та'].replace(-1, '.')
+        print('Evaluation complete with:')
+        print('Minimum depth', str(depth_limit))
+        print('Minimum AF', str(af_limit))
+        print('Minimum population AF', str(paf_limit))
+        dfd[k]['temp_id'] = dfd[k]['Хромосома'] + ':' + dfd[k]['Позиция'].astype(str) + ':' + dfd[k]['Реф_аллель'] + '>' + dfd[k]['Альт_аллель'] + '_' + dfd[k]['Коллер']
+        counts = dfd[k]['temp_id'].value_counts()
+        dfd[k]['Число_проб_с_вариантом'] = dfd[k]['temp_id'].map(counts)
+        sample_num = len(dfd[k]['Проба'].unique())
+        dfd[k]['Доля_проб_с_вариантом'] = dfd[k]['Число_проб_с_вариантом'] / sample_num
+        print('Added in-house frequency')
         rusDictValues = [v for v in dfd[k].columns if v in rusDict.values()]
         orderedValues = list()
         for v in rusDict.values():
             if v in rusDictValues:
                 if not (v in orderedValues):
                     orderedValues.append(v)
+                    if v == 'COSMIC_некодир':
+                        orderedValues.append('Сумма_COSMIC')
         orderedValues.append('Коллер')
         orderedValues.append('Доверие')
+        orderedValues.append('Число_проб_с_вариантом')
+        orderedValues.append('Доля_проб_с_вариантом')
         dfd[k] = dfd[k][orderedValues]
 
     df = pd.concat(dfd.values())
