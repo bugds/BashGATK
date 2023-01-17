@@ -76,6 +76,8 @@ elif [[ $command == 'anno' ]]; then
     export protocol='refGene,ensGene,gnomad211_exome,gnomad30_genome,dbnsfp42a,dbscsnv11,clinvar_latest,cosmic95_coding,cosmic95_noncoding,avsnp150'
     export operation='g,g,f,f,f,f,f,f,f,f'
     export xreffile='/home/bioinfuser/applications/annovar/example/gene_fullxref.txt'
+    export parallelJobs=10
+    export update_annovar_db='/home/bioinfuser/applications/update_annovar_db/bugds_update.sh'
 elif [[ $command == 'btil' ]]; then
     # bed_to_interval_list.sh
     export regions='/home/bioinfuser/data/kapa_hyperexome_files/KAPA_HyperExome_hg38_capture_targets.bed'
@@ -144,5 +146,4 @@ elif [[ $command == 'mask' ]]; then
     export reference='/home/bioinfuser/data/hg38/gencode_v42_genes.gff3'
     export maskGenes='/home/bioinfuser/data/kapa_hyperexome_files/mask_genes'
     export bedtools='/home/bioinfuser/applications/bedtools.static.binary'
-    export generateBed='no'
 fi
