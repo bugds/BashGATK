@@ -16,6 +16,7 @@ rusDict = {
     'POS': 'Позиция',
     'REF': 'Реф_аллель',
     'ALT': 'Альт_аллель',
+    'ID': 'ID',
     'FORMAT_AF': 'Аллельная_частота',
     'FORMAT_VAF': 'Аллельная_частота',
     'FORMAT_DP': 'Глубина_прочтения',
@@ -25,6 +26,7 @@ rusDict = {
     'INFO_ANNO_ExonicFunc.refGene': 'Кодирующее_последствие',
     'INFO_ANNO_AAChange.refGene': 'Полная_запись',
     'INFO_ANNO_AF_popmax': 'Макс_попул_ч-та_1',
+    'INFO_ANNO_AF': 'Макс_попул_ч-та_1_alt',
     'INFO_VEP_MAX_AF': 'Макс_попул_ч-та_2',
     'Макс_попул_ч-та': 'Макс_попул_ч-та',
     'In_silico_прогноз': 'In_silico_прогноз',
@@ -108,6 +110,11 @@ if len(dfd) == 0:
     print('No files to analyze')
 else:
     for k in dfd:
+        dfd[k]['ID'] = dfd[k]['#CHROM'] \
+            + '-' + dfd[k]['POS'].astype(str) \
+            + '-' + dfd[k]['REF'] \
+            + '-' + dfd[k]['ALT']
+        dfd[k]['FORMAT_GT'] = '"' + dfd[k]['FORMAT_GT'] + '"'
         dfd[k] = dfd[k].rename(columns = rusDict)
         print('Columns renamed')
         for p in preds:
@@ -128,11 +135,12 @@ else:
         dfd[k]['In_silico_прогноз'] = dfd[k]['In_silico_прогноз'].map(manage_preds)
         print('Single prognosis done')
         dfd[k]['Макс_попул_ч-та_1'] = dfd[k]['Макс_попул_ч-та_1'].replace('.', -1)
+        dfd[k]['Макс_попул_ч-та_1_alt'] = dfd[k]['Макс_попул_ч-та_1_alt'].replace('.', -1)
         dfd[k]['Макс_попул_ч-та_2'] = dfd[k]['Макс_попул_ч-та_2'].replace('.', -1)
-        dfd[k]['Макс_попул_ч-та'] = dfd[k][['Макс_попул_ч-та_1', 'Макс_попул_ч-та_2']].astype(float).apply(max, axis=1)
+        dfd[k]['Макс_попул_ч-та'] = dfd[k][['Макс_попул_ч-та_1', 'Макс_попул_ч-та_2', 'Макс_попул_ч-та_1_alt']].astype(float).apply(max, axis=1)
         print('Single MAF done')
         dfd[k] = dfd[k].drop(columns = preds)
-        dfd[k] = dfd[k].drop(columns = ['Макс_попул_ч-та_1', 'Макс_попул_ч-та_2'])
+        dfd[k] = dfd[k].drop(columns = ['Макс_попул_ч-та_1', 'Макс_попул_ч-та_1_alt', 'Макс_попул_ч-та_2'])
         print('Excessive columns dropped')
         dfd[k]['Доверие'] = ''
         dfd[k].loc[dfd[k]['Глубина_прочтения'] < depth_limit, 'Доверие'] = 'Низк'
@@ -143,7 +151,7 @@ else:
         print('Evaluation complete with:')
         print('Minimum depth', str(depth_limit))
         print('Minimum AF', str(af_limit))
-        print('Minimum population AF', str(paf_limit))
+        print('Maximum population AF', str(paf_limit))
         dfd[k]['temp_id'] = dfd[k]['Хромосома'] + ':' + dfd[k]['Позиция'].astype(str) + ':' + dfd[k]['Реф_аллель'] + '>' + dfd[k]['Альт_аллель'] + '_' + dfd[k]['Коллер']
         counts = dfd[k]['temp_id'].value_counts()
         dfd[k]['Число_проб_с_вариантом'] = dfd[k]['temp_id'].map(counts)
