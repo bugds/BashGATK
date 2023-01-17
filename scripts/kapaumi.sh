@@ -70,17 +70,6 @@ function fastqToSam {
 }
 export -f fastqToSam
 
-# function pairedFastQsToUnmappedBAM {
-#     local files="${outputFolder}fastq/*"
-#     for forward in $files; do
-#         getMetadata $forward
-#         if $direction; then
-#             forwardToReverse $forward
-#             fastqToSam
-#         fi
-#     done
-# }
-
 function pairedFastQsToUnmappedBAM {
     forward=$1
     getMetadata $forward
@@ -170,28 +159,6 @@ function qcAndAlign {
         --ALIGNER_PROPER_PAIR_FLAGS true \
         --CLIP_OVERLAPPING_READS false
 }
-
-# function mergeSamFiles {
-#     local javaOpt="-Xms4000m"
-#     local files="${outputFolder}premerged/*"
-# 
-#     for file in $files; do
-#         filename=$(basename -- $file)
-#         
-#         substrings=$(echo $filename | tr '_' ' ')
-#         for s in $substrings; do
-#             if [[ ${s:0:1} == $nameSubString ]]; then
-#                 name=${s:0}
-#             fi
-#         done
-#         if [ ! -f "${outputFolder}merged/${name}.bam" ]; then
-#             echo $name
-#             $samtools merge -r \
-#                 ${outputFolder}merged/${name}.bam \
-#                 ${outputFolder}premerged/*${name}*
-#         fi
-#     done
-# }
 
 function mergeSamFiles {
     local javaOpt="-Xms4000m"
@@ -374,75 +341,94 @@ function markDuplicates {
         --CREATE_MD5_FILE true
 }
 
+function getDepths {
+    local bamName=$(basename -- ${1} | cut -f 1 -d '.')
+    echo $bamName > ${outputFolder}depths/${bamName}.txt
+
+    $samtools depth \
+        -b $regions \
+        $1 \
+        -a \
+        | \
+        awk '{sum+=$3; sumsq+=$3*$3} END { print "Average = ",sum/NR; print "Stdev = ",sqrt(sumsq/NR - (sum/NR)**2)}' \
+        >> ${outputFolder}depths/${bamName}.txt
+}
+
 # MAIN
 
-makeDirectory unmapped
-parallelRun pairedFastQsToUnmappedBAM "${outputFolder}fastq/*"
-sleep 1
+# makeDirectory unmapped
+# parallelRun pairedFastQsToUnmappedBAM "${outputFolder}fastq/*"
+# sleep 1
 
-makeDirectory temporary_files
-validateSam
-sleep 1
+# makeDirectory temporary_files
+# validateSam
+# sleep 1
 
-makeDirectory UMIs_extracted
-parallelRun extractUMIs "${outputFolder}unmapped/*"
+# makeDirectory UMIs_extracted
+# parallelRun extractUMIs "${outputFolder}unmapped/*"
 
-makeDirectory fastq_for_qc
-makeDirectory fastq_trimmed
-makeDirectory unmerged
-makeDirectory premerged
-parallelRun qcAndAlign "${outputFolder}UMIs_extracted/*"
-sleep 1
+# makeDirectory fastq_for_qc
+# makeDirectory fastq_trimmed
+# makeDirectory unmerged
+# makeDirectory premerged
+# parallelRun qcAndAlign "${outputFolder}UMIs_extracted/*"
+# sleep 1
 
-rm -r "${outputFolder}fastq_for_qc"
-rm -r "${outputFolder}fastq_trimmed"
-rm -r "${outputFolder}unmerged"
-sleep 1
+# rm -r "${outputFolder}fastq_for_qc"
+# rm -r "${outputFolder}fastq_trimmed"
+# rm -r "${outputFolder}unmerged"
+# rm -r "${outputFolder}UMIs_extracted"
+# sleep 1
 
-makeDirectory merged
-parallelRun mergeSamFiles "${outputFolder}premerged/*"
-sleep 1
+# makeDirectory merged
+# parallelRun mergeSamFiles "${outputFolder}premerged/*"
+# sleep 1
 
-rm -r "${outputFolder}unmapped"
-rm -r "${outputFolder}premerged"
-sleep 1
+# rm -r "${outputFolder}unmapped"
+# rm -r "${outputFolder}premerged"
+# sleep 1
 
-### SOMATIC PART
+# ### SOMATIC PART
 
-makeDirectory only_proper
-parallelRun onlyProperPairs "${outputFolder}merged/*"
-sleep 1
+# makeDirectory only_proper
+# parallelRun onlyProperPairs "${outputFolder}merged/*"
+# sleep 1
 
-makeDirectory reads_grouped
-makeDirectory reads_called
-parallelRun groupSameUMIReads "${outputFolder}only_proper/*"
+# makeDirectory reads_grouped
+# makeDirectory reads_called
+# parallelRun groupSameUMIReads "${outputFolder}only_proper/*"
 
-rm -r "${outputFolder}only_proper"
-sleep 1
+# rm -r "${outputFolder}only_proper"
+# sleep 1
 
-makeDirectory fastq_for_realignment
-makeDirectory realigned
-makeDirectory realigned_merged
-parallelRun realign "${outputFolder}reads_called/*"
+# makeDirectory fastq_for_realignment
+# makeDirectory realigned
+# makeDirectory realigned_merged
+# parallelRun realign "${outputFolder}reads_called/*"
 
-rm -r "${outputFolder}reads_grouped"
-rm -r "${outputFolder}reads_called"
-sleep 1
+# rm -r "${outputFolder}reads_grouped"
+# rm -r "${outputFolder}reads_called"
+# sleep 1
 
-makeDirectory sorted
-parallelRun sortAndFixTags "${outputFolder}realigned_merged/*.bam"
-sleep 1
+# makeDirectory sorted
+# parallelRun sortAndFixTags "${outputFolder}realigned_merged/*.bam"
+# sleep 1
 
-rm -r "${outputFolder}fastq_for_realignment"
-rm -r "${outputFolder}realigned"
-sleep 1
+# rm -r "${outputFolder}fastq_for_realignment"
+# rm -r "${outputFolder}realigned"
+# rm -r "${outputFolder}realigned_merged"
+# sleep 1
 
-makeDirectory temporary_files/recal_reports
-parallelRun baseRecalibrator "${outputFolder}sorted/*.bam"
-sleep 1
+# makeDirectory temporary_files/recal_reports
+# parallelRun baseRecalibrator "${outputFolder}sorted/*.bam"
+# sleep 1
 
-makeDirectory recalibrated
-parallelRun applyBqsr "${outputFolder}sorted/*.bam"
+# makeDirectory recalibrated
+# parallelRun applyBqsr "${outputFolder}sorted/*.bam"
+
+makeDirectory depths
+parallelRun getDepths "${outputFolder}sorted/*.bam"
+cat ${outputFolder}depths/*.txt > "${outputFolder}depths/depthReport_somatic.txt"
 
 rm -r "${outputFolder}sorted"
 sleep 1
@@ -455,6 +441,15 @@ makeDirectory duplicates_marked
 parallelRun markDuplicates "${outputFolder}merged/*.bam"
 sleep 1
 
+rm -r "${outputFolder}merged"
+sleep 1
+
 makeDirectory sorted
 parallelRun sortAndFixTags "${outputFolder}duplicates_marked/*.bam"
 sleep 1
+
+rm -r "${outputFolder}duplicates_marked"
+sleep 1
+
+parallelRun getDepths "${outputFolder}sorted/*.bam"
+cat ${outputFolder}depths/*.txt > "${outputFolder}depths/depthReport_germinal.txt"
