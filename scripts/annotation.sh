@@ -74,6 +74,8 @@ function annotate {
     onlyPASS $base $folder
 }
 
+bash ${update_annovar_db}
+
 if [[ -d "${inputFolder}/mutect2" ]]
 then
     folder="anno_soma"
