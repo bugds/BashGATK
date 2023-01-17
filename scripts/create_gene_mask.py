@@ -6,7 +6,6 @@ import pandas as pd
 reference = os.environ['reference']
 maskGenes = os.environ['maskGenes']
 bedtools = os.environ['bedtools']
-generateBed = os.environ['generateBed']
 wd = os.environ['outputFolder']
 
 print('Make sure all your files have ".txt" extension')
@@ -18,7 +17,7 @@ def get_ref_gene(annotation):
 def read_refGene(referencePath):
     return pd.read_csv(referencePath, header = None, sep = '\t')
 
-def read_mask_file():
+def read_mask_files():
     mask_dict = dict()
     for filename in glob.glob(os.path.join(maskGenes, '*.txt')):
         path = os.path.join(maskGenes, filename)
@@ -28,12 +27,12 @@ def read_mask_file():
     return mask_dict
 
 def get_masks(ref_df, mask_dict, maskGenes):
+    ref_df['gene'] = ref_df[8].map(get_ref_gene)
     bed_names = list()
     for k in mask_dict:
         curr_df = pd.DataFrame()
         for g in mask_dict[k]:
             if g != '':
-                ref_df['gene'] = ref_df[8].map(get_ref_gene)
                 mask_df = ref_df[ref_df['gene'] == g]
                 if len(mask_df) == 0:
                     print('Please, replace', g, 'in', k)
@@ -54,7 +53,6 @@ def sort_and_merge(bedtools, bed_names):
             stdin = sorting.stdout
         )
         sorting.wait()
-        print(processed_bed)
         with open(bed, 'wb') as out:
             out.write(processed_bed)
 
@@ -82,11 +80,10 @@ def filter_variants(wd, maskGenes):
         var_df_dict[k].to_csv(os.path.join(wd, k + '.tsv'), index = False, sep = '\t')
 
 def main():
-    if generateBed == 'yes':
-        ref_df = read_refGene(reference)
-        mask_dict = read_mask_file()
-        bed_names = get_masks(ref_df, mask_dict, maskGenes)
-        sort_and_merge(bedtools, bed_names)
+    ref_df = read_refGene(reference)
+    mask_dict = read_mask_files()
+    bed_names = get_masks(ref_df, mask_dict, maskGenes)
+    sort_and_merge(bedtools, bed_names)
     filter_variants(wd, maskGenes)
 
 main()
