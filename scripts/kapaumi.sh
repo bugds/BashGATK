@@ -356,75 +356,75 @@ function getDepths {
 
 # MAIN
 
-# makeDirectory unmapped
-# parallelRun pairedFastQsToUnmappedBAM "${outputFolder}fastq/*"
-# sleep 1
+makeDirectory unmapped
+parallelRun pairedFastQsToUnmappedBAM "${outputFolder}fastq/*"
+sleep 1
 
-# makeDirectory temporary_files
-# validateSam
-# sleep 1
+makeDirectory temporary_files
+validateSam
+sleep 1
 
-# makeDirectory UMIs_extracted
-# parallelRun extractUMIs "${outputFolder}unmapped/*"
+makeDirectory UMIs_extracted
+parallelRun extractUMIs "${outputFolder}unmapped/*"
 
-# makeDirectory fastq_for_qc
-# makeDirectory fastq_trimmed
-# makeDirectory unmerged
-# makeDirectory premerged
-# parallelRun qcAndAlign "${outputFolder}UMIs_extracted/*"
-# sleep 1
+makeDirectory fastq_for_qc
+makeDirectory fastq_trimmed
+makeDirectory unmerged
+makeDirectory premerged
+parallelRun qcAndAlign "${outputFolder}UMIs_extracted/*"
+sleep 1
 
-# rm -r "${outputFolder}fastq_for_qc"
-# rm -r "${outputFolder}fastq_trimmed"
-# rm -r "${outputFolder}unmerged"
-# rm -r "${outputFolder}UMIs_extracted"
-# sleep 1
+rm -r "${outputFolder}fastq_for_qc"
+rm -r "${outputFolder}fastq_trimmed"
+rm -r "${outputFolder}unmerged"
+rm -r "${outputFolder}UMIs_extracted"
+sleep 1
 
-# makeDirectory merged
-# parallelRun mergeSamFiles "${outputFolder}premerged/*"
-# sleep 1
+makeDirectory merged
+parallelRun mergeSamFiles "${outputFolder}premerged/*"
+sleep 1
 
-# rm -r "${outputFolder}unmapped"
-# rm -r "${outputFolder}premerged"
-# sleep 1
+rm -r "${outputFolder}unmapped"
+rm -r "${outputFolder}premerged"
+sleep 1
 
-# ### SOMATIC PART
+### SOMATIC PART
 
-# makeDirectory only_proper
-# parallelRun onlyProperPairs "${outputFolder}merged/*"
-# sleep 1
+makeDirectory only_proper
+parallelRun onlyProperPairs "${outputFolder}merged/*"
+sleep 1
 
-# makeDirectory reads_grouped
-# makeDirectory reads_called
-# parallelRun groupSameUMIReads "${outputFolder}only_proper/*"
+makeDirectory reads_grouped
+makeDirectory reads_called
+parallelRun groupSameUMIReads "${outputFolder}only_proper/*"
 
-# rm -r "${outputFolder}only_proper"
-# sleep 1
+rm -r "${outputFolder}only_proper"
+sleep 1
 
-# makeDirectory fastq_for_realignment
-# makeDirectory realigned
-# makeDirectory realigned_merged
-# parallelRun realign "${outputFolder}reads_called/*"
+makeDirectory fastq_for_realignment
+makeDirectory realigned
+makeDirectory realigned_merged
+parallelRun realign "${outputFolder}reads_called/*"
 
-# rm -r "${outputFolder}reads_grouped"
-# rm -r "${outputFolder}reads_called"
-# sleep 1
+rm -r "${outputFolder}reads_grouped"
+rm -r "${outputFolder}reads_called"
+sleep 1
 
-# makeDirectory sorted
-# parallelRun sortAndFixTags "${outputFolder}realigned_merged/*.bam"
-# sleep 1
+makeDirectory sorted
+parallelRun sortAndFixTags "${outputFolder}realigned_merged/*.bam"
+sleep 1
 
-# rm -r "${outputFolder}fastq_for_realignment"
-# rm -r "${outputFolder}realigned"
-# rm -r "${outputFolder}realigned_merged"
-# sleep 1
+rm -r "${outputFolder}fastq_for_realignment"
+rm -r "${outputFolder}realigned"
+rm -r "${outputFolder}realigned_merged"
+sleep 1
 
-# makeDirectory temporary_files/recal_reports
-# parallelRun baseRecalibrator "${outputFolder}sorted/*.bam"
-# sleep 1
+makeDirectory temporary_files/recal_reports
+parallelRun baseRecalibrator "${outputFolder}sorted/*.bam"
+sleep 1
 
-# makeDirectory recalibrated
-# parallelRun applyBqsr "${outputFolder}sorted/*.bam"
+makeDirectory recalibrated
+parallelRun applyBqsr "${outputFolder}sorted/*.bam"
 
 makeDirectory depths
 parallelRun getDepths "${outputFolder}sorted/*.bam"
