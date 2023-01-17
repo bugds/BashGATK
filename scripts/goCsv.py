@@ -1,5 +1,4 @@
 import os
-import sys
 
 wd = os.environ['outputFolder']
 
@@ -70,6 +69,7 @@ def parseFormatColumns(line, headerList, formatList, filename):
 def parseAnnoColumns(varDict, annoList, delimeter=innerDelimeter):
     annoData = varDict['INFO'].split(';')[:-1]
     annoChunk = annoData[:annoData.index(endingAnno)]
+    annoChunk = [c for c in annoChunk if c.split('=')[-1] != '.']
     for c in range(0, annoData.count(endingAnno)):
         for key in annoList:
             valueFound = False
