@@ -428,7 +428,7 @@ parallelRun applyBqsr "${outputFolder}sorted/*.bam"
 
 makeDirectory depths
 parallelRun getDepths "${outputFolder}sorted/*.bam"
-cat ${outputFolder}depths/*.txt > "${outputFolder}depths/depthReport_somatic.txt"
+cat ${outputFolder}depths/*.txt > "${outputFolder}depths/depthReport_somatic.out"
 
 rm -r "${outputFolder}sorted"
 sleep 1
@@ -452,4 +452,6 @@ rm -r "${outputFolder}duplicates_marked"
 sleep 1
 
 parallelRun getDepths "${outputFolder}sorted/*.bam"
-cat ${outputFolder}depths/*.txt > "${outputFolder}depths/depthReport_germinal.txt"
+cat ${outputFolder}depths/*.txt > "${outputFolder}depths/depthReport_germinal.out"
+
+sleep 1
