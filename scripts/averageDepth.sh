@@ -13,7 +13,6 @@ function makeDirectory {
 
 function parallelRun {  
     local files=$2
-    local parallelJobs=5
 
     export -f $1
     parallel -j $parallelJobs $1 ::: $files
@@ -33,5 +32,5 @@ function getDepths {
 }
 
 makeDirectory depths
-parallelRun getDepths "${outputFolder}duplicates_marked/*.bam"
-cat ${outputFolder}depths/*.txt > "${outputFolder}depths/depthReport.txt"
+parallelRun getDepths "${outputFolder}sorted/*.bam"
+cat ${outputFolder}depths/*.txt > "${outputFolder}depths/depthReport.out"

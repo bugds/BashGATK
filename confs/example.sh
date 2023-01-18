@@ -111,6 +111,7 @@ elif [[ $command == 'cint' ]]; then
 elif [[ $command == 'aved' ]]; then
     # averageDepth.sh
     export regions='/home/bioinfuser/data/kapa_hyperexome_files/KAPA_HyperExome_hg38_capture_targets.bed'
+    export parallelJobs=12
 elif [[ $command == 'qgen' ]]; then
     # annotationQiagen.sh
     export chain='/home/bioinfuser/data/hg38/hg19ToHg38.over.chain'
