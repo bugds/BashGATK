@@ -67,7 +67,6 @@ export -f onlyPASS
 
 function annotate {
     base=$(basename -- $1)
-    makeDirectory $folder
     decomposeNormalize $1 $base $folder
     annotateAnnovar $base $folder
     annotateVep $base $folder
@@ -76,16 +75,20 @@ function annotate {
 
 bash ${update_annovar_db}
 
-if [[ -d "${inputFolder}/mutect2" ]]
+echo "Running with ${parallelJobs} threads"
+
+if [[ -d "${outputFolder}/mutect2" ]]
 then
-    folder="anno_soma"
-    parallelRun annotate ${inputFolder}/mutect2/*/*.filtered.vcf
+    export folder="anno_soma"
+    makeDirectory $folder
+    parallelRun annotate ${outputFolder}/mutect2/*/*.filtered.vcf
 fi
 
-if [[ -d "${inputFolder}/deepvariant" ]]
+if [[ -d "${outputFolder}/deepvariant" ]]
 then
-    folder="anno_germ"
-    gunzip -k -f ${inputFolder}/deepvariant/*.vcf.gz
-    rm -f ${inputFolder}/deepvariant/*.g.vcf
-    parallelRun annotate ${inputFolder}/mutect2/*/*.filtered.vcf
+    export folder="anno_germ"
+    makeDirectory $folder
+    gunzip -k -f ${outputFolder}/deepvariant/*.vcf.gz
+    rm -f ${outputFolder}/deepvariant/*.g.vcf
+    parallelRun annotate ${outputFolder}/mutect2/*/*.filtered.vcf
 fi

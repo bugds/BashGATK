@@ -68,7 +68,6 @@ elif [[ $command == 'anno' ]]; then
     # annotation.sh
     export vep='/home/bioinfuser/applications/ensembl-vep/vep'
     export fasta='/home/bioinfuser/.vep/homo_sapiens/101_GRCh38/Homo_sapiens.GRCh38.dna.primary_assembly.fa'
-    export inputFolder="${outputFolder}"
     export annovar='/home/bioinfuser/applications/annovar/table_annovar.pl'
     export annovarDb='/home/bioinfuser/applications/annovar/humandb/'
     export bcftools='/home/bioinfuser/applications/bcftools-1.15/bin/bcftools'
