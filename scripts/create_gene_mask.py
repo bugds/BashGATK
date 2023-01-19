@@ -57,33 +57,35 @@ def sort_and_merge(bedtools, bed_names):
             out.write(processed_bed)
 
 def filter_variants(wd, maskGenes):
-    var_df = pd.read_csv(wd + '/rus2.tsv', sep = '\t')
-    var_df_dict = dict()
-    for bed in glob.glob(os.path.join(maskGenes, '*.bed')):
+    var_df = pd.read_csv(os.path.join(wd, 'rus2.tsv'), sep = '\t')
+    var_df['Маска'] = ""
+    for bed in sorted(glob.glob(os.path.join(maskGenes, '*.bed'))):
         path = os.path.join(maskGenes, bed)
-        name = os.path.basename(path)[:-4]
-        var_df_dict[name] = pd.DataFrame()
+        name = os.path.basename(path)[:-4] + ';'
         with open(bed, 'r') as inp:
             bed = [l.strip().split('\t') for l in inp.readlines()]
         for gene_string in bed:
             chr = gene_string[0]
             start = int(gene_string[1])
             end = int(gene_string[2])
-            var_df_dict[name] = var_df_dict[name].append(
-                var_df[
-                    (var_df['Хромосома'] == chr)
-                    & (var_df['Позиция'] <= end)
-                    & (var_df['Позиция'] >= start)
-                ]
-            )
-    for k in var_df_dict:
-        var_df_dict[k].to_csv(os.path.join(wd, k + '.tsv'), index = False, sep = '\t')
+            var_df.loc[
+                (var_df['Хромосома'] == chr)
+                & (var_df['Позиция'] <= end)
+                & (var_df['Позиция'] >= start),
+            'Маска'] += name
+    var_df['Маска'] = var_df['Маска'].replace("", ".")
+    return var_df
+
+def save_sample_df(var_df):
+    for sample in var_df['Проба'].unique():
+        var_df[var_df['Проба'] == sample].to_csv(os.path.join(wd, sample + '.tsv'), sep = '\t', index = None)
 
 def main():
     ref_df = read_refGene(reference)
     mask_dict = read_mask_files()
     bed_names = get_masks(ref_df, mask_dict, maskGenes)
     sort_and_merge(bedtools, bed_names)
-    filter_variants(wd, maskGenes)
+    var_df = filter_variants(wd, maskGenes)
+    save_sample_df(var_df)
 
 main()
