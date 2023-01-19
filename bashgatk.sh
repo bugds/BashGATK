@@ -27,8 +27,12 @@ elif [ $command == 'btil' ]; then
 elif [ $command == 'cvfc' ]; then
     bash ${scriptsDirectory}/create_variants_for_contamination.sh
 elif [ $command == '2csv' ]; then
+    source ~/applications/miniconda3/etc/profile.d/conda.sh
+    conda activate stat
     python3 ${scriptsDirectory}/goCsv.py
 elif [ $command == '2csvq' ]; then
+    source ~/applications/miniconda3/etc/profile.d/conda.sh
+    conda activate stat
     python3 ${scriptsDirectory}/goCsvQiagen.py
 elif [ $command == 'cnvk' ]; then
     bash ${scriptsDirectory}/run_cnvkit.sh
@@ -39,6 +43,8 @@ elif [ $command == 'deep19' ]; then
 elif [ $command == 'cnvk19' ]; then
     bash ${scriptsDirectory}/run_cnvkit.sh
 elif [ $command == '2rus2' ]; then
+    source ~/applications/miniconda3/etc/profile.d/conda.sh
+    conda activate stat
     python3 ${scriptsDirectory}/2rus2.py
 elif [ $command == 'cint' ]; then
     bash ${scriptsDirectory}/createIntervals.sh
@@ -49,7 +55,11 @@ elif [ $command == 'afcvfc' ]; then
 elif [ $command == 'kumi' ]; then
     bash ${scriptsDirectory}/kapaumi.sh
 elif [ $command == 'acmg' ]; then
+    source ~/applications/miniconda3/etc/profile.d/conda.sh
+    conda activate stat
     python3 ${scriptsDirectory}/acmg_classifier.py
 elif [ $command == 'mask' ]; then
+    source ~/applications/miniconda3/etc/profile.d/conda.sh
+    conda activate stat
     python3 ${scriptsDirectory}/create_gene_mask.py
 fi
