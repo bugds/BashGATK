@@ -182,4 +182,4 @@ for folder in ['anno_soma', 'anno_germ']:
     if os.path.isdir(wd + '/' + folder): 
         createCsv('vep.vcf.pass.vcf', '/combined_passed_' + folder + '.tsv', folder)
         createCsv('vep.vcf', '/combined_' + folder + '.tsv', folder)
-        addFreq(folder)
+        #addFreq(folder)

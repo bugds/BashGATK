@@ -9,6 +9,7 @@ print('Allele frequency limit:', af_limit)
 paf_limit = float(os.environ['paf_limit'])
 print('Minor allele frequency limit:', paf_limit)
 wd = os.environ['outputFolder']
+freq_file = os.environ['freq_file']
 
 rusDict = {
     'SAMPLE': 'Проба',
@@ -81,11 +82,12 @@ def manage_x3d(string):
 
 def manage_preds(curr_preds):
     if ('D' in curr_preds) and not ('T' in curr_preds):
-        return 'Поврежд'
+        if curr_preds.count('D') >= 3:
+            return 'Поврежд'
     elif ('T' in curr_preds) and not ('D' in curr_preds):
-        return 'Нейтрал'
-    else:
-        return '.'
+        if curr_preds.count('T') >= 3:
+            return 'Нейтрал'
+    return '.'
 
 def cosmsum(cosmlist):
     sums = list()
@@ -97,6 +99,34 @@ def cosmsum(cosmlist):
             curr_sum = sum(cosmdigits)
         sums.append(curr_sum)
     return max(sums)
+
+def check_BA1(maf):
+    if maf > 0.03:
+        return 1
+    return 0
+
+def check_BS1(maf):
+    if maf > 0.005:
+        return 1
+    return 0
+
+def check_BP4(insilico):
+    if insilico == 'Нейтрал':
+        return 1
+    return 0
+
+def check_BP6(clinvar):
+    if ('benign' in clinvar.lower()) and (not ('pathogenic') in clinvar.lower()):
+        return 1
+    return 0
+
+def checkB(row):
+    if row['BA1'] == 1:
+        return 1
+    else:
+        if sum([row['BS1'], row['BP4'], row['BP6']]) >= 2:
+            return 1
+    return "."
 
 dfd = dict()
 if os.path.exists(wd + '/combined_passed_anno_germ.tsv'):
@@ -147,15 +177,15 @@ else:
         dfd[k].loc[dfd[k]['Аллельная_частота'] < af_limit ,'Доверие'] = 'Низк'
         dfd[k].loc[dfd[k]['Макс_попул_ч-та'].astype(float) > paf_limit, 'Доверие'] = 'Низк'
         dfd[k].loc[dfd[k]['Доверие'] == '', 'Доверие'] = 'Выс'
-        dfd[k]['Макс_попул_ч-та'] = dfd[k]['Макс_попул_ч-та'].replace(-1, '.')
-        print('Evaluation complete with:')
-        print('Minimum depth', str(depth_limit))
-        print('Minimum AF', str(af_limit))
-        print('Maximum population AF', str(paf_limit))
         dfd[k]['temp_id'] = dfd[k]['Хромосома'] + ':' + dfd[k]['Позиция'].astype(str) + ':' + dfd[k]['Реф_аллель'] + '>' + dfd[k]['Альт_аллель'] + '_' + dfd[k]['Коллер']
-        counts = dfd[k]['temp_id'].value_counts()
+        freq = pd.read_csv(freq_file, sep = '\t')
+        freq = pd.concat([freq, dfd[k][['temp_id', 'Проба']]])
+        freq = freq.drop_duplicates()
+        freq.to_csv(freq_file, index = False, sep = '\t')
+        counts = freq['temp_id'].value_counts()
         dfd[k]['Число_проб_с_вариантом'] = dfd[k]['temp_id'].map(counts)
-        sample_num = len(dfd[k]['Проба'].unique())
+        sample_num = len(freq['Проба'].unique())
+        print('Total number of samples:', sample_num)
         dfd[k]['Доля_проб_с_вариантом'] = dfd[k]['Число_проб_с_вариантом'] / sample_num
         print('Added in-house frequency')
         rusDictValues = [v for v in dfd[k].columns if v in rusDict.values()]
@@ -171,6 +201,17 @@ else:
         orderedValues.append('Число_проб_с_вариантом')
         orderedValues.append('Доля_проб_с_вариантом')
         dfd[k] = dfd[k][orderedValues]
+
+    dfd['germ']['BA1'] = dfd['germ']['Макс_попул_ч-та'].astype(float).map(check_BA1)
+    dfd['germ']['BS1'] = dfd['germ']['Макс_попул_ч-та'].astype(float).map(check_BS1)
+    dfd['germ']['BP4'] = dfd['germ']['In_silico_прогноз'].map(check_BP4)
+    dfd['germ']['BP6'] = dfd['germ']['Клин_знач'].map(check_BP6)
+    dfd['germ']['Добро'] = dfd['germ'].apply(checkB, axis = 1)
+    dfd['soma']['Добро'] = "."
+    dfd['germ'] = dfd['germ'].drop(columns = ['BA1', 'BS1', 'BP4', 'BP6'])
+
+    dfd['germ']['Макс_попул_ч-та'] = dfd['germ']['Макс_попул_ч-та'].replace(-1, '.')
+    dfd['soma']['Макс_попул_ч-та'] = dfd['soma']['Макс_попул_ч-та'].replace(-1, '.')
 
     df = pd.concat(dfd.values())
     df = df.sort_values(by = ['Хромосома', 'Позиция'])
