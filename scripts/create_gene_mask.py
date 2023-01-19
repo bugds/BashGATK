@@ -36,7 +36,7 @@ def get_masks(ref_df, mask_dict, maskGenes):
                 mask_df = ref_df[ref_df['gene'] == g]
                 if len(mask_df) == 0:
                     print('Please, replace', g, 'in', k)
-                curr_df = curr_df.append(mask_df[[0, 3, 4]])
+                curr_df = pd.concat([curr_df, mask_df[[0, 3, 4]]])
         bed_name = os.path.join(maskGenes, k[:-3] + 'bed')
         bed_names.append(bed_name)
         curr_df.to_csv(bed_name, sep = '\t', header = None, index = False)
@@ -62,6 +62,7 @@ def filter_variants(wd, maskGenes):
     for bed in sorted(glob.glob(os.path.join(maskGenes, '*.bed'))):
         path = os.path.join(maskGenes, bed)
         name = os.path.basename(path)[:-4] + ';'
+        print("Creating mask", name[:-1])
         with open(bed, 'r') as inp:
             bed = [l.strip().split('\t') for l in inp.readlines()]
         for gene_string in bed:
@@ -78,7 +79,13 @@ def filter_variants(wd, maskGenes):
 
 def save_sample_df(var_df):
     for sample in var_df['Проба'].unique():
-        var_df[var_df['Проба'] == sample].to_csv(os.path.join(wd, sample + '.tsv'), sep = '\t', index = None)
+        print("Saving", sample)
+        try:
+            var_df[var_df['Проба'] == sample].to_excel(os.path.join(wd, sample + '.xlsx'), index = None)
+            print("Excel saved")
+        except:
+            var_df[var_df['Проба'] == sample].to_csv(os.path.join(wd, sample + '.tsv'), sep = '\t', index = None)
+            print("Excel saving failed, saved as tsv")
 
 def main():
     ref_df = read_refGene(reference)
