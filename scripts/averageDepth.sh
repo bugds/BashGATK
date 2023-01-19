@@ -35,7 +35,7 @@ function getDepths {
         >> ${outputFolder}depths/${bamName}.txt
     
     echo "\nTotal reads:" >> ${outputFolder}depths/${bamName}.txt
-    samtools view -c $1 >> ${outputFolder}depths/${bamName}.txt
+    $samtools view -c $1 >> ${outputFolder}depths/${bamName}.txt
     echo "\nMapped reads:" >> ${outputFolder}depths/${bamName}.txt
     $samtools view -c -F 260 $1 >> ${outputFolder}depths/${bamName}.txt
 }
