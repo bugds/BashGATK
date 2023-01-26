@@ -81,7 +81,20 @@ def save_sample_df(var_df):
     for sample in var_df['Проба'].unique():
         print("Saving", sample)
         try:
-            var_df[var_df['Проба'] == sample].to_excel(os.path.join(wd, sample + '.xlsx'), index = None)
+            with pd.ExcelWriter(os.path.join(wd, sample + '.xlsx')) as writer:
+                sample_df = var_df[var_df['Проба'] == sample]
+                sample_df[
+                    (sample_df['Доверие'] == 'Выс') \
+                    & (sample_df['Добро'] == '.') \
+                    & (sample_df['Маска'] != '.') \
+                    & (sample_df['Маска'] != 'CE;')
+                ].to_excel(writer, sheet_name = 'Haematology', index = None)
+                sample_df[
+                    (sample_df['Доверие'] == 'Выс') \
+                    & (sample_df['Добро'] == '.') \
+                    & (sample_df['Маска'] != '.')
+                ].to_excel(writer, sheet_name = 'Haematology+CE', index = None)
+                sample_df.to_excel(writer, sheet_name = 'all', index = None)
             print("Excel saved")
         except:
             var_df[var_df['Проба'] == sample].to_csv(os.path.join(wd, sample + '.tsv'), sep = '\t', index = None)
