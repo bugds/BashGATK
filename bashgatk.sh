@@ -42,10 +42,10 @@ elif [ $command == 'deep19' ]; then
     bash ${scriptsDirectory}/deepvariant.sh
 elif [ $command == 'cnvk19' ]; then
     bash ${scriptsDirectory}/run_cnvkit.sh
-elif [ $command == '2rus2' ]; then
+elif [ $command == '2rus' ]; then
     source ~/applications/miniconda3/etc/profile.d/conda.sh
     conda activate stat
-    python3 ${scriptsDirectory}/2rus2.py
+    python3 ${scriptsDirectory}/2rus.py
 elif [ $command == 'cint' ]; then
     bash ${scriptsDirectory}/createIntervals.sh
 elif [ $command == 'aved' ]; then
