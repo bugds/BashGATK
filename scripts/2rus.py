@@ -27,9 +27,8 @@ rusDict = {
     'INFO_ANNO_Func.refGene': 'Последствие',
     'INFO_ANNO_ExonicFunc.refGene': 'Кодирующее_последствие',
     'INFO_ANNO_AAChange.refGene': 'Полная_запись',
-    'INFO_ANNO_AF_popmax': 'Макс_попул_ч-та_1',
-    'INFO_ANNO_AF': 'Макс_попул_ч-та_1_alt',
-    'INFO_VEP_MAX_AF': 'Макс_попул_ч-та_2',
+    'INFO_ANNO_AF': 'Макс_попул_ч-та_1',
+    'INFO_VEP_AF': 'Макс_попул_ч-та_2',
     'Макс_попул_ч-та': 'Макс_попул_ч-та',
     'In_silico_прогноз': 'In_silico_прогноз',
     'INFO_ANNO_SIFT_pred': 'PredSIFT',
@@ -166,10 +165,9 @@ def replace_hexs(df):
 def add_popfreq(df):
     df['Макс_попул_ч-та'] = ''
     df['Макс_попул_ч-та_1'] = df['Макс_попул_ч-та_1'].replace('.', -1)
-    df['Макс_попул_ч-та_1_alt'] = df['Макс_попул_ч-та_1_alt'].replace('.', -1)
     df['Макс_попул_ч-та_2'] = df['Макс_попул_ч-та_2'].replace('.', -1)
-    df['Макс_попул_ч-та'] = df[['Макс_попул_ч-та_1', 'Макс_попул_ч-та_2', 'Макс_попул_ч-та_1_alt']].astype(float).apply(max, axis=1)
-    df = df.drop(columns = ['Макс_попул_ч-та_1', 'Макс_попул_ч-та_1_alt', 'Макс_попул_ч-та_2'])
+    df['Макс_попул_ч-та'] = df[['Макс_попул_ч-та_1', 'Макс_попул_ч-та_2']].astype(float).apply(max, axis=1)
+    df = df.drop(columns = ['Макс_попул_ч-та_1', 'Макс_попул_ч-та_2'])
     print('Single MAF done')
     return df
 

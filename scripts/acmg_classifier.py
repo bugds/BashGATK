@@ -169,23 +169,12 @@ def quest_pvs1_b(conseq):
     if ('HIGH') in conseq:
         return "?"
 
-# def quest_ps1(row, cv):
-#     if not ('exonic' in row['Последствие']):
-#         chr = row['Хромосома'].replace('chr', '')
-#         pos = row['Позиция']
-#         curr_cv = cv[cv[0] == chr]
-#         if len(curr_cv[
-#             (curr_cv[1] <= pos) &
-#             (curr_cv[2] >= pos)
-#         ]) > 0:
-#             return "?"
-
 def quest_pm1(domain):
     if domain != '.':
         return "?"
 
 def quest_pm2(paf):
-    if paf < 0.0001:
+    if paf <= 0.005:
         return "?"
 
 def quest_pm4(conseq):
@@ -199,13 +188,6 @@ def quest_pm4(conseq):
 def quest_pm5(conseq):
     if 'missense' in conseq:
         return "?"
-
-def quest_pp2(row, constr_genes):
-    if ('missense' in row['INFO_VEP_Consequence']):
-        transcripts = row['INFO_VEP_Feature']
-        for t in transcripts.split(','):
-            if t in constr_genes:
-                return "?"
 
 def add_mis_z(row, mis_z_dict):
     if ('missense' in row['INFO_VEP_Consequence']):
@@ -223,6 +205,14 @@ def add_pLI(row, pLI_dict):
         if t in pLI_dict:
             result.append(pLI_dict[t])
     return ','.join([str(i) for i in sorted(list(set(result)))])
+
+def quest_pp2(mis_z):
+    if not (mis_z is None):
+        mis_z = [float(i) for i in mis_z.split(',') if i != ""]
+        if len(mis_z) > 0:
+            mis_z = max(mis_z)
+            if float(mis_z) >= 3:
+                return "?"
 
 def quest_pp3(insilico):
     if insilico == 'Поврежд':
@@ -265,12 +255,11 @@ def classify(df):
     df['PP1'] = '?'
     cdf = pd.read_csv(constraint, sep = '\t')
     cdf = cdf[['transcript', 'mis_z', 'pLI']]
-    constr_genes = cdf[cdf['mis_z'] >= 3]['transcript']
-    df['PP2'] = df.apply(quest_pp2, args = (constr_genes, ), axis = 1)
     mis_z_dict = dict(zip(cdf['transcript'], cdf['mis_z']))
     df['Missense_Z'] = df.apply(add_mis_z, args = (mis_z_dict, ), axis = 1)
     pLI_dict = dict(zip(cdf['transcript'], cdf['pLI']))
     df['pLI'] = df.apply(add_pLI, args = (pLI_dict, ), axis = 1)
+    df['PP2'] = df['Missense_Z'].map(quest_pp2)
     df['PP3'] = df['In_silico_прогноз'].map(quest_pp3)
     df['PP4'] = '?'
     df['PP5'] = df['Клин_знач'].map(quest_pp5)
