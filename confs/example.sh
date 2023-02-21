@@ -1,6 +1,8 @@
 # bashgatk.sh
 
 export outputFolder=''
+export nameSubString='N'
+export laneSubString='L'
 export scriptsDirectory='/home/bioinfuser/applications/BashGATK/scripts'
 export gatk='/home/bioinfuser/applications/gatk-4.2.5.0/gatk'
 export samtools='/home/bioinfuser/applications/samtools-1.3.1/samtools'
@@ -20,8 +22,6 @@ export platform=ILLUMINA
 if [[ $command == 'proc' ]]; then
     # parallelProcessing.sh
     export opticalPixelDistance=100 #In general, a pixel distance of 100 is recommended for data generated using unpatterned flowcells (e.g. HiSeq2500) and a pixel distance of 2500 is recommended for patterned flowcells (e.g. NovaSeq/HiSeq4000).
-    export nameSubString='N'
-    export laneSubString='L'
     export fastqc='/home/bioinfuser/applications/FastQC/fastqc'
     export trimmomatic='java -jar /home/bioinfuser/applications/Trimmomatic-0.39/trimmomatic-0.39.jar'
     export trimCommandLine='ILLUMINACLIP:/home/bioinfuser/applications/Trimmomatic-0.39/adapters/TruSeq3-PE-3.fa:2:30:10 LEADING:30 TRAILING:30 SLIDINGWINDOW:20:35 MINLEN:120'
@@ -34,8 +34,6 @@ if [[ $command == 'proc' ]]; then
 elif [[ $command == 'procAmp' ]]; then
     # parallelProcessingAmpliconBased.sh
     export opticalPixelDistance=100
-    export nameSubString='N'
-    export laneSubString='L'
     export fastqc='/home/bioinfuser/applications/FastQC/fastqc'
     export trimmomatic='java -jar /home/bioinfuser/applications/Trimmomatic-0.39/trimmomatic-0.39.jar'
     export trimCommandLine='ILLUMINACLIP:/home/bioinfuser/applications/Trimmomatic-0.39/adapters/TruSeq3-PE-3.fa:2:30:10 LEADING:30 TRAILING:30 SLIDINGWINDOW:20:35 MINLEN:120'
@@ -126,8 +124,6 @@ elif [[ $command == 'afcvfc' ]]; then
 elif [[ $command == 'kapaumi' ]]; then
     # kapaumi.sh
     export opticalPixelDistance=2500 #In general, a pixel distance of 100 is recommended for data generated using unpatterned flowcells (e.g. HiSeq2500) and a pixel distance of 2500 is recommended for patterned flowcells (e.g. NovaSeq/HiSeq4000).
-    export nameSubString='N'
-    export laneSubString='L'
     export fastp='/home/bioinfuser/applications/fastp/fastp'
     export fgbio='java -jar /home/bioinfuser/applications/fgbio/fgbio-2.0.2.jar'
     export inputFolder="${outputFolder}/fastq/"
@@ -150,4 +146,7 @@ elif [[ $command == 'mask' ]]; then
     export reference='/home/bioinfuser/data/hg38/gencode_v42_genes.gff3'
     export maskGenes='/home/bioinfuser/data/kapa_hyperexome_files/mask_genes'
     export bedtools='/home/bioinfuser/applications/bedtools.static.binary'
+elif [[ $command == 'spai' ]]; then
+    # run_spliceai.py
+    export annotation='grch38'
 fi

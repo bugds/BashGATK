@@ -54,12 +54,16 @@ elif [ $command == 'afcvfc' ]; then
     bash ${scriptsDirectory}/create_variants_for_contamination_only_af.sh $outputFolder
 elif [ $command == 'kumi' ]; then
     bash ${scriptsDirectory}/kapaumi.sh
-elif [ $command == 'acmg' ]; then
-    source ~/applications/miniconda3/etc/profile.d/conda.sh
-    conda activate stat
-    python3 ${scriptsDirectory}/acmg_classifier.py
+# elif [ $command == 'acmg' ]; then
+#     source ~/applications/miniconda3/etc/profile.d/conda.sh
+#     conda activate stat
+#     python3 ${scriptsDirectory}/acmg_classifier.py
 elif [ $command == 'mask' ]; then
     source ~/applications/miniconda3/etc/profile.d/conda.sh
     conda activate stat
     python3 ${scriptsDirectory}/create_gene_mask.py
+elif [ $command == 'spai' ]; then
+    source ~/applications/miniconda3/etc/profile.d/conda.sh
+    conda activate spliceai
+    python3 ${scriptsDirectory}/run_spliceai.py
 fi

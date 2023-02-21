@@ -81,24 +81,29 @@ def save_sample_df(var_df):
     for sample in var_df['Проба'].unique():
         print("Saving", sample)
         try:
-            with pd.ExcelWriter(os.path.join(wd, sample + '.xlsx')) as writer:
+            if not os.path.exists(os.path.join(wd, 'xl_results')):
+                os.makedirs(os.path.join(wd, 'xl_results'))
+            with pd.ExcelWriter(os.path.join(wd, 'xl_results', sample + '.xlsx')) as writer:
                 sample_df = var_df[var_df['Проба'] == sample]
-                sample_df[
-                    (sample_df['Доверие'] == 'Выс') \
-                    & (sample_df['Добро'] == '.') \
-                    & (sample_df['Маска'] != '.') \
-                    & (sample_df['Маска'] != 'CE;')
-                ].to_excel(writer, sheet_name = 'Haematology', index = None)
-                sample_df[
+                valuable_df = sample_df[
                     (sample_df['Доверие'] == 'Выс') \
                     & (sample_df['Добро'] == '.') \
                     & (sample_df['Маска'] != '.')
-                ].to_excel(writer, sheet_name = 'Haematology+CE', index = None)
+                ]
+                # valuable_df = ac.classify(valuable_df)
+                valuable_df[
+                    (valuable_df['Маска'] != 'CE;')
+                ].to_excel(writer, sheet_name = 'Target', index = None)
+                valuable_df.to_excel(writer, sheet_name = 'Clinical_Exome', index = None)
                 sample_df.to_excel(writer, sheet_name = 'all', index = None)
             print("Excel saved")
         except:
-            var_df[var_df['Проба'] == sample].to_csv(os.path.join(wd, sample + '.tsv'), sep = '\t', index = None)
-            print("Excel saving failed, saved as tsv")
+            print("Excel saving failed")
+    var_df[(var_df['Доверие'] == 'Выс') \
+        & (var_df['Добро'] == '.') \
+        & (var_df['Маска'] != '.')
+    ].to_csv(os.path.join(wd, 'xl_results', 'results.tsv'), sep = '\t', index = None)
+    
 
 def main():
     ref_df = read_refGene(reference)
