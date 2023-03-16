@@ -133,8 +133,8 @@ elif [[ $command == 'kapaumi' ]]; then
     export bwaCommandline2="$bwa mem -v 3 -t 8 -Y -M $refFasta"
     export parallelJobs=3
     export lane=1
-elif [[ $command == '2rus' ]]; then
-    # 2rus.py
+elif [[ $command == '2csv' ]]; then
+    # 2rus.py and others
     export depth_limit=10
     export af_limit=0.02
     export paf_limit=0.05
@@ -142,10 +142,15 @@ elif [[ $command == '2rus' ]]; then
     export clinvar='/home/bioinfuser/applications/annovar/humandb/hg38_clinvar_latest.txt'
     export bedtools='/home/bioinfuser/applications/bedtools.static.binary'
     export constraint='/home/bioinfuser/data/hg38/gnomad/gnomad.v2.1.1.lof_metrics.by_gene.txt'
+    export reference='/home/bioinfuser/data/hg38/gencode_v42_genes.gff3'
+    export maskGenes='/home/bioinfuser/data/kapa_hyperexome_files/mask_genes'
+    export annotation='grch38'
+    export omim='/home/bioinfuser/data/hg38/OMIM/genemap2_redacted.tsv'
 elif [[ $command == 'mask' ]]; then
     export reference='/home/bioinfuser/data/hg38/gencode_v42_genes.gff3'
     export maskGenes='/home/bioinfuser/data/kapa_hyperexome_files/mask_genes'
     export bedtools='/home/bioinfuser/applications/bedtools.static.binary'
+    export omim='/home/bioinfuser/data/hg38/OMIM/genemap2_redacted.tsv'
 elif [[ $command == 'spai' ]]; then
     # run_spliceai.py
     export annotation='grch38'
