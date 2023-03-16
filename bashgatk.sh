@@ -30,6 +30,12 @@ elif [ $command == '2csv' ]; then
     source ~/applications/miniconda3/etc/profile.d/conda.sh
     conda activate stat
     python3 ${scriptsDirectory}/goCsv.py
+    python3 ${scriptsDirectory}/2rus.py
+    python3 ${scriptsDirectory}/create_gene_mask.py
+    conda activate spliceai
+    python3 ${scriptsDirectory}/run_spliceai.py
+    conda activate stat
+    python3 ${scriptsDirectory}/add_omim.py
 elif [ $command == '2csvq' ]; then
     source ~/applications/miniconda3/etc/profile.d/conda.sh
     conda activate stat
@@ -42,10 +48,15 @@ elif [ $command == 'deep19' ]; then
     bash ${scriptsDirectory}/deepvariant.sh
 elif [ $command == 'cnvk19' ]; then
     bash ${scriptsDirectory}/run_cnvkit.sh
-elif [ $command == '2rus' ]; then
-    source ~/applications/miniconda3/etc/profile.d/conda.sh
-    conda activate stat
-    python3 ${scriptsDirectory}/2rus.py
+# elif [ $command == '2rus' ]; then
+#     source ~/applications/miniconda3/etc/profile.d/conda.sh
+#     conda activate stat
+#     python3 ${scriptsDirectory}/2rus.py
+#     python3 ${scriptsDirectory}/create_gene_mask.py
+#     conda activate spliceai
+#     python3 ${scriptsDirectory}/run_spliceai.py
+#     conda activate stat
+#     python3 ${scriptsDirectory}/add_omim.py
 elif [ $command == 'cint' ]; then
     bash ${scriptsDirectory}/createIntervals.sh
 elif [ $command == 'aved' ]; then
@@ -58,12 +69,12 @@ elif [ $command == 'kumi' ]; then
 #     source ~/applications/miniconda3/etc/profile.d/conda.sh
 #     conda activate stat
 #     python3 ${scriptsDirectory}/acmg_classifier.py
-elif [ $command == 'mask' ]; then
-    source ~/applications/miniconda3/etc/profile.d/conda.sh
-    conda activate stat
-    python3 ${scriptsDirectory}/create_gene_mask.py
-elif [ $command == 'spai' ]; then
-    source ~/applications/miniconda3/etc/profile.d/conda.sh
-    conda activate spliceai
-    python3 ${scriptsDirectory}/run_spliceai.py
+# elif [ $command == 'mask' ]; then
+#     source ~/applications/miniconda3/etc/profile.d/conda.sh
+#     conda activate stat
+#     python3 ${scriptsDirectory}/create_gene_mask.py
+# elif [ $command == 'spai' ]; then
+#     source ~/applications/miniconda3/etc/profile.d/conda.sh
+#     conda activate spliceai
+#     python3 ${scriptsDirectory}/run_spliceai.py
 fi
