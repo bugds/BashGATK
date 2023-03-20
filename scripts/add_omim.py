@@ -97,8 +97,8 @@ def add_omim(df):
             & (df['Позиция'] <= end)
             & (df['Позиция'] >= start),
         'OMIM'] += row['Phenotypes'] + ';'
-    df['MIM_ID'].fillna('.')
-    df['OMIM'].fillna('.')
+    df['MIM_ID'] = df['MIM_ID'].fillna('.')
+    df['OMIM'] = df['OMIM'].fillna('.')
     return df
 
 df = pd.read_csv(os.path.join(wd, 'xl_results', 'results.tsv'), sep = '\t')
