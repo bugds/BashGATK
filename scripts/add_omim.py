@@ -55,6 +55,30 @@ order = [
 omim_file = os.environ['omim']
 wd = os.environ['outputFolder']
 
+def get_vardict(df):
+    vardict = dict()
+    grouped = df.groupby('Ген')
+    for name, group in grouped:
+        vardict[name] = len(group['ID'].unique())
+    return vardict
+
+def gene_style(v, vard):
+    if vard[str(v)] > 1:
+        return 'font-weight:bold;'
+    return None
+
+def genotype_style(v):
+    if '1/1' in str(v):
+        return 'font-weight:bold;'
+    if '1|1' in str(v):
+        return 'font-weight:bold;'
+    return None
+
+def omim_style(v):
+    if 'dominant' in str(v).lower():
+        return 'font-weight:bold;'
+    return None
+
 def add_omim(df):
     df['MIM_ID'] = ''
     df['OMIM'] = ''
@@ -96,4 +120,9 @@ for s in samples:
                 if len(df_map[k].columns.tolist()) != len(order):
                     raise Exception('Change order list!!!')
                 df_map[k] = df_map[k][order]
+                vardict = get_vardict(df_map[k])
+                df_map[k] = df_map[k].style \
+                    .applymap(gene_style, vard = vardict, subset=pd.IndexSlice[:, ['Ген']]) \
+                    .applymap(genotype_style, subset=pd.IndexSlice[:, ['Генотип']]) \
+                    .applymap(omim_style, subset=pd.IndexSlice[:, ['OMIM']])
             df_map[k].to_excel(writer, sheet_name = k, index = None)
