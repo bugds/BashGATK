@@ -122,7 +122,7 @@ for s in samples:
                 df_map[k] = df_map[k][order]
                 vardict = get_vardict(df_map[k])
                 df_map[k] = df_map[k].style \
-                    .applymap(gene_style, vard = vardict, subset=pd.IndexSlice[:, ['Ген']]) \
-                    .applymap(genotype_style, subset=pd.IndexSlice[:, ['Генотип']]) \
+                    .applymap(gene_style, vard = vardict, subset=pd.IndexSlice[:, ['Ген']])\
+                    .applymap(genotype_style, subset=pd.IndexSlice[:, ['Генотип']])\
                     .applymap(omim_style, subset=pd.IndexSlice[:, ['OMIM']])
             df_map[k].to_excel(writer, sheet_name = k, index = None)
