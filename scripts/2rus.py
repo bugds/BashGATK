@@ -12,6 +12,8 @@ print('Minor allele frequency limit:', paf_limit)
 wd = os.environ['outputFolder']
 freq_file = os.environ['freq_file']
 
+chunk_size = 300000
+
 rusDict = {
     'SAMPLE': 'Проба',
     '#CHROM': 'Хромосома',
@@ -77,7 +79,6 @@ def replace_x3b(string):
 def manage_x3d(string):
     if 'x3d' in string:
         string = string.replace('\\', '/')
-        #string = string.split('/x3d')[1].split(';')[0]
     return string.replace('/x3d', '=')
 
 def manage_preds(curr_preds):
@@ -212,61 +213,60 @@ def order_cols(df):
     orderedValues.append('Маска')
     orderedValues.append('Missense_Z')
     orderedValues.append('pLI')
-    orderedValues.append('PVS1')
-    orderedValues.append('PS1')
-    orderedValues.append('PS2')
-    orderedValues.append('PS3')
-    orderedValues.append('PS4')
-    orderedValues.append('PM1')
-    orderedValues.append('PM2')
-    orderedValues.append('PM3')
-    orderedValues.append('PM4')
-    orderedValues.append('PM5')
-    orderedValues.append('PM6')
-    orderedValues.append('PP1')
-    orderedValues.append('PP2')
-    orderedValues.append('PP3')
-    orderedValues.append('PP4')
-    orderedValues.append('PP5')
+    orderedValues.append('Баллы')
     df = df[orderedValues]
     return df
 
 def classify_benign(dfd):
-    dfd['germ']['BA1'] = dfd['germ']['Макс_попул_ч-та'].astype(float).map(check_BA1)
-    dfd['germ']['BS1'] = dfd['germ']['Макс_попул_ч-та'].astype(float).map(check_BS1)
-    dfd['germ']['BP4'] = dfd['germ']['In_silico_прогноз'].map(check_BP4)
-    dfd['germ']['BP6'] = dfd['germ']['Клин_знач'].map(check_BP6)
-    dfd['germ']['Добро'] = dfd['germ'].apply(checkB, axis = 1)
-    dfd['soma']['Добро'] = "."
-    dfd['germ'] = dfd['germ'].drop(columns = ['BA1', 'BS1', 'BP4', 'BP6'])
-    dfd['germ']['Макс_попул_ч-та'] = dfd['germ']['Макс_попул_ч-та'].replace(-1, '.')
-    dfd['soma']['Макс_попул_ч-та'] = dfd['soma']['Макс_попул_ч-та'].replace(-1, '.')
+    if 'germ' in dfd:
+        dfd['germ']['BA1'] = dfd['germ']['Макс_попул_ч-та'].astype(float).map(check_BA1)
+        dfd['germ']['BS1'] = dfd['germ']['Макс_попул_ч-та'].astype(float).map(check_BS1)
+        dfd['germ']['BP4'] = dfd['germ']['In_silico_прогноз'].map(check_BP4)
+        dfd['germ']['BP6'] = dfd['germ']['Клин_знач'].map(check_BP6)
+        dfd['germ']['Добро'] = dfd['germ'].apply(checkB, axis = 1)
+        dfd['germ'] = dfd['germ'].drop(columns = ['BA1', 'BS1', 'BP4', 'BP6'])
+        dfd['germ']['Макс_попул_ч-та'] = dfd['germ']['Макс_попул_ч-та'].replace(-1, '.')
+    if 'soma' in dfd:
+        dfd['soma']['Добро'] = "."
+        dfd['soma']['Макс_попул_ч-та'] = dfd['soma']['Макс_попул_ч-та'].replace(-1, '.')
     return dfd
 
 dfd = dict()
 if os.path.exists(wd + '/combined_passed_anno_germ.tsv'):
-    dfd['germ'] = pd.read_csv(wd + '/combined_passed_anno_germ.tsv', sep = '\t')
-    dfd['germ']['Коллер'] = 'DeepVariant'
+    dfd['germ'] = list()
+    for chunk in pd.read_csv(wd + '/combined_passed_anno_germ.tsv', sep = '\t', chunksize=chunk_size):
+        chunk['Коллер'] = 'DeepVariant'
+        dfd['germ'].append(chunk)
+    print('Germline DF read')
 if os.path.exists(wd + '/combined_passed_anno_soma.tsv'):
-    dfd['soma'] = pd.read_csv(wd + '/combined_passed_anno_soma.tsv', sep = '\t')
-    dfd['soma']['Коллер'] = 'Mutect2'
+    dfd['soma'] = list()
+    for chunk in pd.read_csv(wd + '/combined_passed_anno_soma.tsv', sep = '\t', chunksize=chunk_size):
+        chunk['Коллер'] = 'Mutect2'
+        dfd['soma'].append(chunk)
+    print('Somatic DF read')
 
 if len(dfd) == 0:
     print('No files to analyze')
 else:
     for k in dfd:
-        dfd[k] = add_id(dfd[k])
-        dfd[k] = correct_GT(dfd[k])
-        dfd[k] = dfd[k].rename(columns = rusDict)
-        dfd[k] = add_predictions(dfd[k])
-        dfd[k] = replace_hexs(dfd[k])
-        dfd[k] = add_popfreq(dfd[k])
-        dfd[k] = add_trust(dfd[k])
-        dfd[k] = add_inhouse_freq(dfd[k])
-        dfd[k] = ac.classify(dfd[k])
-        dfd[k] = dfd[k].fillna(".")
-        dfd[k] = order_cols(dfd[k])
+        for i in range(0, len(dfd[k])):
+            dfd[k][i] = add_id(dfd[k][i])
+            dfd[k][i] = correct_GT(dfd[k][i])
+            dfd[k][i] = dfd[k][i].rename(columns = rusDict)
+            dfd[k][i] = add_predictions(dfd[k][i])
+            dfd[k][i] = replace_hexs(dfd[k][i])
+            dfd[k][i] = add_popfreq(dfd[k][i])
+            print('Dataframe reformatted')
+            dfd[k][i] = add_trust(dfd[k][i])
+            print('Trust evaluated')
+            dfd[k][i] = add_inhouse_freq(dfd[k][i])
+            print('Inhouse population frequency updated')
+            dfd[k][i] = ac.classify(dfd[k][i])
+            dfd[k][i] = dfd[k][i].fillna(".")
+            dfd[k][i] = order_cols(dfd[k][i])
+        dfd[k] = pd.concat(dfd[k], ignore_index = True)
     dfd = classify_benign(dfd)
+    print('Variants classified')
     df = pd.concat(dfd.values())
     df = df.sort_values(by = ['Хромосома', 'Позиция'])
     df.to_csv(wd + '/rus2.tsv', sep = '\t', index = False)

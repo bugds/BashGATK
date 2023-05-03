@@ -21,6 +21,25 @@ function parallelRun {
     parallel -j $parallelJobs $1 ::: $files
 }
 
+function makeLocalRefMut2 {
+    local bamName=$(basename -- ${1} | cut -f 1 -d '.')
+
+    $bedtools genomecov -ibam ${1} -bg \
+    | awk '$4 > 9' \
+    | $bedtools merge -i - -c 1 -o count \
+    | cat - $regions \
+    | awk '$3>$2' \
+    | $bedtools sort -i - \
+    | $bedtools merge -d 100 -i - \
+    > ${outputFolder}local_ref_mut2/${bamName}.bed
+
+    java -jar $picard \
+      BedToIntervalList \
+        I=${outputFolder}local_ref_mut2/${bamName}.bed \
+        O=${outputFolder}local_ref_mut2/${bamName}.interval_list \
+        SD=$refDict
+}
+
 function mutect2 {
     local bamName=$(basename -- ${1} | cut -f 1 -d '.')
     makeDirectory mutect2/${bamName}
@@ -41,7 +60,7 @@ function mutect2 {
         -I $1 \
         -tumor 'cat ${outputFolder}mutect2/${bamName}/${bamName}.txt' \
         --germline-resource $gnomad \
-        -L $regions \
+        -L ${outputFolder}local_ref_mut2/${bamName}.interval_list \
         -pon $pon \
         -O ${outputFolder}mutect2/${bamName}/${bamName}.unfiltered.vcf \
         --bam-output ${outputFolder}mutect2/${bamName}/${bamName}.bamout.bam \
@@ -51,7 +70,7 @@ function mutect2 {
       GetPileupSummaries \
         -R $refFasta \
         -I $1 \
-        --interval-set-rule INTERSECTION -L $regions \
+        --interval-set-rule INTERSECTION -L ${outputFolder}local_ref_mut2/${bamName}.interval_list \
         -V $variantsForContamination \
         -L $variantsForContamination \
         -O ${outputFolder}mutect2/${bamName}/${bamName}.pileups.table
@@ -149,6 +168,9 @@ function filterAlignmentArtifacts {
             -O $output
     done
 }
+
+makeDirectory local_ref_mut2
+parallelRun makeLocalRefMut2 "${outputFolder}recalibrated/*.bam"
 
 makeDirectory mutect2
 export -f makeDirectory

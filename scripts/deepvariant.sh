@@ -21,6 +21,26 @@ function makeDirectory {
     fi
 }
 
+function parallelRun {  
+    local files=$2
+
+    export -f $1
+    parallel -j $parallelJobs $1 ::: $files
+}
+
+function makeLocalRefDeep {
+    local bamName=$(basename -- ${1} | cut -f 1 -d '.')
+
+    $bedtools genomecov -ibam ${1} -bg \
+    | awk '$4 > 9' \
+    | $bedtools merge -i - -c 1 -o count \
+    | cat - $regions \
+    | awk '$3>$2' \
+    | $bedtools sort -i - \
+    | $bedtools merge -d 100 -i - \
+    > ${outputFolder}local_ref_deep/${bamName}.bed
+}
+
 function runDeepvariant {
     makeDirectory "deepvariant"
     
@@ -33,17 +53,20 @@ function runDeepvariant {
         docker run \
           -v ${outputFolder}sorted:"/input" \
           -v ${outputFolder}deepvariant:"/output" \
+          -v ${outputFolder}local_ref_deep:"/local_ref_deep" \
           -v ${refFolder}:"/reference" \
           google/deepvariant:${binVersion} \
           /opt/deepvariant/bin/run_deepvariant \
           --model_type=WES \
           --ref=/reference/${refFastaPathPart} \
           --reads=/input/${baseName} \
-          --regions /reference/${regionsPathPart} \
+          --regions=/local_ref_deep/${bamName}.bed \
           --output_vcf=/output/${bamName}.vcf.gz \
           --output_gvcf=/output/${bamName}.g.vcf.gz \
           --num_shards=${numCpu}
     done
 }
 
+makeDirectory local_ref_deep
+parallelRun makeLocalRefDeep "${outputFolder}sorted/*.bam"
 runDeepvariant

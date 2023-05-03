@@ -146,6 +146,7 @@ elif [[ $command == '2csv' ]]; then
     export maskGenes='/home/bioinfuser/data/kapa_hyperexome_files/mask_genes'
     export annotation='grch38'
     export omim='/home/bioinfuser/data/hg38/OMIM/genemap2_redacted.tsv'
+    export regions='/home/bioinfuser/data/kapa_hyperexome_files/KAPA_HyperExome_hg38_capture_targets.bed'
 elif [[ $command == 'mask' ]]; then
     export reference='/home/bioinfuser/data/hg38/gencode_v42_genes.gff3'
     export maskGenes='/home/bioinfuser/data/kapa_hyperexome_files/mask_genes'

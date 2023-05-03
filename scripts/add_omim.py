@@ -34,25 +34,28 @@ order = [
     'Доля_проб_с_вариантом',
     'Добро',
     'Доверие',
-    'PVS1',
-    'PS1',
-    'PS2',
-    'PS3',
-    'PS4',
-    'PM1',
-    'PM2',
-    'PM3',
-    'PM4',
-    'PM5',
-    'PM6',
-    'PP1',
-    'PP2',
-    'PP3',
-    'PP4',
-    'PP5'
+    'Target_region',
+    # 'PVS1',
+    # 'PS1',
+    # 'PS2',
+    # 'PS3',
+    # 'PS4',
+    # 'PM1',
+    # 'PM2',
+    # 'PM3',
+    # 'PM4',
+    # 'PM5',
+    # 'PM6',
+    # 'PP1',
+    # 'PP2',
+    # 'PP3',
+    # 'PP4',
+    # 'PP5',
+    'Баллы'
 ]
 
 omim_file = os.environ['omim']
+regions_file = os.environ['regions']
 wd = os.environ['outputFolder']
 
 def get_vardict(df):
@@ -101,6 +104,20 @@ def add_omim(df):
     df['OMIM'] = df['OMIM'].fillna('.')
     return df
 
+def get_region_info(df):
+    df['Target_region'] = '.'
+    regions = pd.read_csv(regions_file, sep = '\t', header = None)
+    for _, row in regions.iterrows():
+        chr = row[0]
+        start = row[1]
+        end = row[2]
+        df.loc[
+            (df['Хромосома'] == chr)
+            & (df['Позиция'] <= end)
+            & (df['Позиция'] >= start),
+        'Target_region'] = 'ДА'
+    return df
+
 df = pd.read_csv(os.path.join(wd, 'xl_results', 'results.tsv'), sep = '\t')
 
 samples = list(df['Проба'].unique())
@@ -117,6 +134,7 @@ for s in samples:
             print('List', k)
             if k != 'all':
                 df_map[k] = add_omim(df_map[k])
+                df_map[k] = get_region_info(df_map[k])
                 if len(df_map[k].columns.tolist()) != len(order):
                     raise Exception('Change order list!!!')
                 df_map[k] = df_map[k][order]

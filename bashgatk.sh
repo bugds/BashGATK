@@ -48,6 +48,16 @@ elif [ $command == 'deep19' ]; then
     bash ${scriptsDirectory}/deepvariant.sh
 elif [ $command == 'cnvk19' ]; then
     bash ${scriptsDirectory}/run_cnvkit.sh
+elif [ $command == 'cint' ]; then
+    bash ${scriptsDirectory}/createIntervals.sh
+elif [ $command == 'aved' ]; then
+    bash ${scriptsDirectory}/averageDepth.sh
+elif [ $command == 'afcvfc' ]; then
+    bash ${scriptsDirectory}/create_variants_for_contamination_only_af.sh $outputFolder
+elif [ $command == 'kumi' ]; then
+    bash ${scriptsDirectory}/kapaumi.sh
+fi
+
 # elif [ $command == '2rus' ]; then
 #     source ~/applications/miniconda3/etc/profile.d/conda.sh
 #     conda activate stat
@@ -57,14 +67,6 @@ elif [ $command == 'cnvk19' ]; then
 #     python3 ${scriptsDirectory}/run_spliceai.py
 #     conda activate stat
 #     python3 ${scriptsDirectory}/add_omim.py
-elif [ $command == 'cint' ]; then
-    bash ${scriptsDirectory}/createIntervals.sh
-elif [ $command == 'aved' ]; then
-    bash ${scriptsDirectory}/averageDepth.sh
-elif [ $command == 'afcvfc' ]; then
-    bash ${scriptsDirectory}/create_variants_for_contamination_only_af.sh $outputFolder
-elif [ $command == 'kumi' ]; then
-    bash ${scriptsDirectory}/kapaumi.sh
 # elif [ $command == 'acmg' ]; then
 #     source ~/applications/miniconda3/etc/profile.d/conda.sh
 #     conda activate stat
@@ -77,4 +79,3 @@ elif [ $command == 'kumi' ]; then
 #     source ~/applications/miniconda3/etc/profile.d/conda.sh
 #     conda activate spliceai
 #     python3 ${scriptsDirectory}/run_spliceai.py
-fi

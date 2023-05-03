@@ -155,39 +155,45 @@ def add_columns(df):
 def quest_pvs1_a(conseq):
     if not ('nonframeshift') in conseq:
         if 'frameshift' in conseq:
-            return "?"
+            return 1
     if 'splicing' in conseq:
-        return "?"
+        return 1
     if 'startloss' in conseq:
-        return "?"
+        return 1
     if 'stoploss' in conseq:
-        return "?"
+        return 1
     if 'stopgain' in conseq:
-        return "?"
+        return 1
+    return 0
 
 def quest_pvs1_b(conseq):
     if ('HIGH') in conseq:
-        return "?"
+        return 1
+    return 0
 
 def quest_pm1(domain):
     if domain != '.':
-        return "?"
+        return 1
+    return 0
 
 def quest_pm2(paf):
     if paf <= 0.005:
-        return "?"
+        return 1
+    return 0
 
 def quest_pm4(conseq):
     if 'inframe_insertion' in conseq:
-        return "?"
+        return 1
     if 'inframe_deletion' in conseq:
-        return "?"
+        return 1
     if 'stop_lost' in conseq:
-        return "?"
+        return 1
+    return 0
 
 def quest_pm5(conseq):
     if 'missense' in conseq:
-        return "?"
+        return 1
+    return 0
 
 def add_mis_z(row, mis_z_dict):
     if ('missense' in row['INFO_VEP_Consequence']):
@@ -212,19 +218,23 @@ def quest_pp2(mis_z):
         if len(mis_z) > 0:
             mis_z = max(mis_z)
             if float(mis_z) >= 3:
-                return "?"
+                return 1
+    return 0
 
 def quest_pp3(insilico):
     if insilico == 'Поврежд':
-        return "?"
+        return 1
+    return 0
 
 def quest_pp5(significance):
     if significance != '.':
         if not ('benign' in significance.lower()):
-            return "?"
+            return 1
+    return 0
 
 def classify(df):
     df = add_columns(df)
+    df['PVS1'] = 0
     df['PVS1'] = df['Кодирующее_последствие'].map(quest_pvs1_a)
     df['PVS1'] = df['INFO_VEP_IMPACT'].map(quest_pvs1_b)
     print('PVS ready')
@@ -238,17 +248,22 @@ def classify(df):
     intersect_df = bed_intersect(bedtools, bed, clinvar + '.temp')
     intersect_df.columns = ['Хромосома', 'Позиция', 'Выбросить']
     ids = list(intersect_df.merge(df, on = ['Хромосома', 'Позиция'], how = 'left')['ID'].unique())
-    df.loc[df['ID'].isin(ids), 'PS1'] = '?'
+    df['PS1'] = 0
+    df.loc[df['ID'].isin(ids), 'PS1'] = 1
     os.remove(clinvar + '.temp')
     os.remove(clinvar + '.bed')
     df['PS2'] = '?'
     df['PS3'] = '?'
     df['PS4'] = '?'
     print('PS ready')
+    df['PM1'] = 0
     df['PM1'] = df['INFO_VEP_DOMAINS'].map(quest_pm1)
+    df['PM2'] = 0
     df['PM2'] = df['Макс_попул_ч-та'].map(quest_pm2)
     df['PM3'] = '?'
+    df['PM4'] = 0
     df['PM4'] = df['INFO_VEP_Consequence'].map(quest_pm4)
+    df['PM5'] = 0
     df['PM5'] = df['INFO_VEP_Consequence'].map(quest_pm5)
     df['PM6'] = '?'
     print('PM ready')
@@ -259,9 +274,16 @@ def classify(df):
     df['Missense_Z'] = df.apply(add_mis_z, args = (mis_z_dict, ), axis = 1)
     pLI_dict = dict(zip(cdf['transcript'], cdf['pLI']))
     df['pLI'] = df.apply(add_pLI, args = (pLI_dict, ), axis = 1)
+    df['PP2'] = 0
     df['PP2'] = df['Missense_Z'].map(quest_pp2)
+    df['PP3'] = 0
     df['PP3'] = df['In_silico_прогноз'].map(quest_pp3)
     df['PP4'] = '?'
+    df['PP5'] = 0
     df['PP5'] = df['Клин_знач'].map(quest_pp5)
     print('PP ready')
+    df['Баллы'] = df['PVS1']*4 \
+    + df['PS1']*3 \
+    + (df['PM1'] + df['PM2'] + df['PM4'] + df['PM5'])*2 \
+    + df['PP2'] + df['PP3'] + df['PP5']
     return df

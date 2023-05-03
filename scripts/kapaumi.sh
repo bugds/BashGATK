@@ -137,11 +137,17 @@ function qcAndAlign {
         --adapter_sequence_r2=AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT \
         -w 12
     
+    rm "${outputFolder}fastq_for_qc/${output}_R1.fastq.gz"
+    rm "${outputFolder}fastq_for_qc/${output}_R2.fastq.gz"
+
     ${bwaCommandline1} \
         "${outputFolder}fastq_trimmed/${output}_R1.fastq.gz" \
         "${outputFolder}fastq_trimmed/${output}_R2.fastq.gz" \
     | \
     $samtools view -Sb > "${outputFolder}unmerged/${output}.bam"
+
+    rm "${outputFolder}fastq_trimmed/${output}_R1.fastq.gz"
+    rm "${outputFolder}fastq_trimmed/${output}_R2.fastq.gz"
 
     $gatk --java-options "-Dsamjdk.compression_level=${compressionLevel} ${javaOpt}" \
       MergeBamAlignment \
