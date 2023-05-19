@@ -139,6 +139,7 @@ for s in samples:
                     raise Exception('Change order list!!!')
                 df_map[k] = df_map[k][order]
                 vardict = get_vardict(df_map[k])
+                df_map[k] = df_map[k].fillna(".")
                 df_map[k] = df_map[k].style \
                     .applymap(gene_style, vard = vardict, subset=pd.IndexSlice[:, ['Ген']])\
                     .applymap(genotype_style, subset=pd.IndexSlice[:, ['Генотип']])\
