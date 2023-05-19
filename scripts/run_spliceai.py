@@ -6,6 +6,7 @@ import pandas as pd
 wd = os.environ['outputFolder']
 ref = os.environ['refFasta']
 anno = os.environ['annotation']
+spai_scores = os.environ['knownScores']
 
 df = pd.read_csv(os.path.join(wd, 'xl_results', 'results.tsv'), sep = '\t')
 
@@ -18,6 +19,16 @@ df.columns = ['#CHROM', 'POS', 'ID', 'REF', 'ALT']
 df['QUAL'] = '.'
 df['FILTER'] = 'PASS'
 df['INFO'] = '.'
+
+### NEW START
+
+known_scores = pd.read_csv(spai_scores, sep = '\t')
+known_ids = list(known_scores['ID'])
+from_before = df[df['ID'].isin(known_ids)]
+df = df[~df['ID'].isin(known_ids)]
+
+### NEW END
+
 df.to_csv(os.path.join(wd, 'xl_results', 'CE.vcf'), index = False, sep = '\t')
 
 if os.path.exists(os.path.join(wd, 'deepvariant')):
@@ -51,6 +62,16 @@ subprocess.run(
         "-A", anno
     ]
 )
+
+### NEW START
+
+with open(os.path.join(wd, 'xl_results', 'CE_spai.txt'), 'a') as out:
+    from_before = from_before.values.tolist()
+    from_before = ['\t'.join([str(j) for j in i]) for i in from_before]
+    from_before = '\n'.join(from_before)
+    out.write('\n' + from_before)
+
+### NEW END
 
 with open(os.path.join(wd, 'xl_results', 'CE_spai.txt'), 'r') as inp:
     lines = [i for i in inp.readlines() if (not (i.startswith('#')))]
