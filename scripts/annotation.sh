@@ -48,9 +48,12 @@ function annotateVep {
     $vep \
         --offline \
         --everything \
-        --fasta $fasta \
+        --fasta $refFasta \
         --vcf \
         --fork $parallelJobs\
+        --buffer_size $bufferSize \
+        --no_stats \
+        --force_overwrite \
         -i ${outputFolder}/${folder}/${base}_anno.hg38_multianno.vcf \
         -o ${outputFolder}/${folder}/${base}_vep.vcf
 }
