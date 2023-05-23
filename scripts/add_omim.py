@@ -100,8 +100,8 @@ def add_omim(df):
             & (df['Позиция'] <= end)
             & (df['Позиция'] >= start),
         'OMIM'] += row['Phenotypes'] + ';'
-    df['MIM_ID'] = df['MIM_ID'].fillna('.')
-    df['OMIM'] = df['OMIM'].fillna('.')
+    df['MIM_ID'] = df['MIM_ID'].replace('', '.')
+    df['OMIM'] = df['OMIM'].replace('', '.')
     return df
 
 def get_region_info(df):
