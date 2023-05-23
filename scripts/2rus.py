@@ -154,7 +154,7 @@ def add_predictions(df):
     return df
 
 def replace_hexs(df):
-    for c in [i for i in rusDict.values() if not (i in ['Позиция', 'Аллельная_частота', 'Глубина_прочтения', 'Макс_попул_ч-та', *preds])]:
+    for c in [i for i in rusDict.values() if not (i in ['Позиция', 'Аллельная_частота', 'Глубина_прочтения', 'Макс_попул_ч-та', 'Макс_попул_ч-та_1', 'Макс_попул_ч-та_2', *preds])]:
         df[c] = df[c].map(replace_x3b)
     print('Replaced HEX ;')
     df['COSMIC_кодир'] = df['COSMIC_кодир'].map(manage_x3d)
