@@ -210,7 +210,10 @@ def add_pLI(row, pLI_dict):
     for t in transcripts.split(','):
         if t in pLI_dict:
             result.append(pLI_dict[t])
-    return ','.join([str(i) for i in sorted(list(set(result)))])
+    if len(result) != 0:
+        return ','.join([str(i) for i in sorted(list(set(result)))])
+    else:
+        return '.'
 
 def quest_pp2(mis_z):
     if not (mis_z is None):
