@@ -20,14 +20,10 @@ df['QUAL'] = '.'
 df['FILTER'] = 'PASS'
 df['INFO'] = '.'
 
-### NEW START
-
 known_scores = pd.read_csv(spai_scores, sep = '\t')
 known_ids = list(known_scores['ID'])
 from_before = df[df['ID'].isin(known_ids)]
 df = df[~df['ID'].isin(known_ids)]
-
-### NEW END
 
 df.to_csv(os.path.join(wd, 'xl_results', 'CE.vcf'), index = False, sep = '\t')
 
@@ -63,18 +59,12 @@ subprocess.run(
     ]
 )
 
-### NEW START
+lines_list = list()
+for filename in ['CE_spai.txt', spai_scores]:
+    with open(os.path.join(wd, 'xl_results', filename), 'r') as inp:
+        lines_list.append([i for i in inp.readlines() if (not (i.startswith('#')))])
 
-with open(os.path.join(wd, 'xl_results', 'CE_spai.txt'), 'a') as out:
-    from_before = from_before.values.tolist()
-    from_before = ['\t'.join([str(j) for j in i]) for i in from_before]
-    from_before = '\n'.join(from_before)
-    out.write('\n' + from_before)
-
-### NEW END
-
-with open(os.path.join(wd, 'xl_results', 'CE_spai.txt'), 'r') as inp:
-    lines = [i for i in inp.readlines() if (not (i.startswith('#')))]
+lines = lines_list[0] + lines_list[1]
 
 score_dict = dict()
 for i in lines:
