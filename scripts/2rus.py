@@ -29,7 +29,7 @@ rusDict = {
     'INFO_ANNO_Func.refGene': 'Последствие',
     'INFO_ANNO_ExonicFunc.refGene': 'Кодирующее_последствие',
     'INFO_ANNO_AAChange.refGene': 'Полная_запись',
-    'INFO_ANNO_gnomad312_AF': 'Макс_попул_ч-та_1',
+    'INFO_ANNO_gnomad312_AF': 'Макс_попул_ч-та_1', # Предпочтительнее!!!
     'INFO_VEP_AF': 'Макс_попул_ч-та_2',
     'Макс_попул_ч-та': 'Макс_попул_ч-та',
     'In_silico_прогноз': 'In_silico_прогноз',
@@ -47,8 +47,8 @@ rusDict = {
     'INFO_ANNO_M-CAP_pred': 'PredM-CAP',
     'INFO_ANNO_fathmm-MKL_coding_pred': 'PredFATHMM-MKL',
     'INFO_ANNO_fathmm-XF_coding_pred': 'PredFATHMM-XF',
-    'INFO_ANNO_cosmic95_coding': 'COSMIC_кодир',
-    'INFO_ANNO_cosmic95_noncoding': 'COSMIC_некодир',
+    'INFO_ANNO_cosmic97_coding': 'COSMIC_кодир',
+    'INFO_ANNO_cosmic97_noncoding': 'COSMIC_некодир',
     'INFO_ANNO_CLNSIG': 'Клин_знач',
     'INFO_ANNO_CLNDN': 'Клин_диаг',
     'INFO_ANNO_avsnp150': 'rsID'
@@ -100,6 +100,12 @@ def cosmsum(cosmlist):
             curr_sum = sum(cosmdigits)
         sums.append(curr_sum)
     return max(sums)
+
+def define_popfreq(popfreqlist):
+    if popfreqlist[0] == -1:
+        return popfreqlist[1]
+    else:
+        return popfreqlist[0]
 
 def check_BA1(maf):
     if maf > 0.03:
@@ -167,7 +173,7 @@ def add_popfreq(df):
     df['Макс_попул_ч-та'] = ''
     df['Макс_попул_ч-та_1'] = df['Макс_попул_ч-та_1'].replace('.', -1)
     df['Макс_попул_ч-та_2'] = df['Макс_попул_ч-та_2'].replace('.', -1)
-    df['Макс_попул_ч-та'] = df[['Макс_попул_ч-та_1', 'Макс_попул_ч-та_2']].astype(float).apply(max, axis=1)
+    df['Макс_попул_ч-та'] = df[['Макс_попул_ч-та_1', 'Макс_попул_ч-та_2']].astype(float).apply(define_popfreq, axis=1)
     df = df.drop(columns = ['Макс_попул_ч-та_1', 'Макс_попул_ч-та_2'])
     print('Single MAF done')
     return df
