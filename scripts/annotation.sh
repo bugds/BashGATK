@@ -88,6 +88,11 @@ then
     for filename in $files; do
         annotate $filename
     done
+    rm ${outputFolder}/${folder}/*step1
+    rm ${outputFolder}/${folder}/*step2
+    rm ${outputFolder}/${folder}/*anno.vcf
+    rm ${outputFolder}/${folder}/*anno.txt
+    rm ${outputFolder}/${folder}/*anno.avinput
 fi
 
 if [[ -d "${outputFolder}/deepvariant" ]]
@@ -100,4 +105,9 @@ then
     for filename in $files; do
         annotate $filename
     done
+    rm ${outputFolder}/${folder}/*step1
+    rm ${outputFolder}/${folder}/*step2
+    rm ${outputFolder}/${folder}/*anno.vcf
+    rm ${outputFolder}/${folder}/*anno.txt
+    rm ${outputFolder}/${folder}/*anno.avinput
 fi
