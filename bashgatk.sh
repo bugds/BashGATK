@@ -27,7 +27,7 @@ elif [ $command == 'btil' ]; then
 elif [ $command == 'cvfc' ]; then
     bash ${scriptsDirectory}/create_variants_for_contamination.sh
 elif [ $command == '2csv' ]; then
-    source ~/applications/miniconda3/etc/profile.d/conda.sh
+    source $conda
     conda activate stat
     python3 ${scriptsDirectory}/goCsv.py
     python3 ${scriptsDirectory}/2rus.py
@@ -37,7 +37,7 @@ elif [ $command == '2csv' ]; then
     conda activate stat
     python3 ${scriptsDirectory}/add_omim.py
 elif [ $command == '2csvq' ]; then
-    source ~/applications/miniconda3/etc/profile.d/conda.sh
+    source $conda
     conda activate stat
     python3 ${scriptsDirectory}/goCsvQiagen.py
 elif [ $command == 'cnvk' ]; then
@@ -55,27 +55,7 @@ elif [ $command == 'aved' ]; then
 elif [ $command == 'afcvfc' ]; then
     bash ${scriptsDirectory}/create_variants_for_contamination_only_af.sh $outputFolder
 elif [ $command == 'kumi' ]; then
+    source $conda
+    conda activate fastqc
     bash ${scriptsDirectory}/kapaumi.sh
 fi
-
-# elif [ $command == '2rus' ]; then
-#     source ~/applications/miniconda3/etc/profile.d/conda.sh
-#     conda activate stat
-#     python3 ${scriptsDirectory}/2rus.py
-#     python3 ${scriptsDirectory}/create_gene_mask.py
-#     conda activate spliceai
-#     python3 ${scriptsDirectory}/run_spliceai.py
-#     conda activate stat
-#     python3 ${scriptsDirectory}/add_omim.py
-# elif [ $command == 'acmg' ]; then
-#     source ~/applications/miniconda3/etc/profile.d/conda.sh
-#     conda activate stat
-#     python3 ${scriptsDirectory}/acmg_classifier.py
-# elif [ $command == 'mask' ]; then
-#     source ~/applications/miniconda3/etc/profile.d/conda.sh
-#     conda activate stat
-#     python3 ${scriptsDirectory}/create_gene_mask.py
-# elif [ $command == 'spai' ]; then
-#     source ~/applications/miniconda3/etc/profile.d/conda.sh
-#     conda activate spliceai
-#     python3 ${scriptsDirectory}/run_spliceai.py
