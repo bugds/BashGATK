@@ -11,6 +11,11 @@ function makeDirectory {
     fi
 }
 
+function fastqQualityControl {
+    $fastqc -t $parallelJobs $1 -o $2
+    multiqc -f $2 -o $2
+}
+
 function parallelRun {  
     local files=$2
 
@@ -146,6 +151,9 @@ function qcAndAlign {
     | \
     $samtools view -Sb > "${outputFolder}unmerged/${output}.bam"
 
+    $fastqc -t $parallelJobs "${outputFolder}fastq_trimmed/${output}_R1.fastq.gz" -o "${outputFolder}/qc_2"
+    $fastqc -t $parallelJobs "${outputFolder}fastq_trimmed/${output}_R2.fastq.gz" -o "${outputFolder}/qc_2"
+
     rm "${outputFolder}fastq_trimmed/${output}_R1.fastq.gz"
     rm "${outputFolder}fastq_trimmed/${output}_R2.fastq.gz"
 
@@ -164,6 +172,8 @@ function qcAndAlign {
         --PRIMARY_ALIGNMENT_STRATEGY MostDistant \
         --ALIGNER_PROPER_PAIR_FLAGS true \
         --CLIP_OVERLAPPING_READS false
+    
+    rm "${outputFolder}unmerged/${output}.bam"
 }
 
 function mergeSamFiles {
@@ -382,12 +392,20 @@ sleep 1
 makeDirectory UMIs_extracted
 parallelRun extractUMIs "${outputFolder}unmapped/*"
 
+### QC
+
+makeDirectory qc_1
+fastqQualityControl "${outputFolder}fastq/*" "${outputFolder}/qc_1"
+
 makeDirectory fastq_for_qc
 makeDirectory fastq_trimmed
+makeDirectory qc_2
 makeDirectory unmerged
 makeDirectory premerged
 parallelRun qcAndAlign "${outputFolder}UMIs_extracted/*"
 sleep 1
+
+multiqc -f "${outputFolder}/qc_2" -o "${outputFolder}/qc_2"
 
 rm -r "${outputFolder}fastq_for_qc"
 rm -r "${outputFolder}fastq_trimmed"
