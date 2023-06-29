@@ -178,8 +178,9 @@ def addFreq(folder):
     def many_vars(DF, l):
         return DF[DF['VARIANT'] == l][['SAMPLE', 'FORMAT_AF']]
 
-for folder in ['anno_soma', 'anno_germ']:
-    if os.path.isdir(wd + '/' + folder): 
-        createCsv('vep.vcf.pass.vcf', '/combined_passed_' + folder + '.tsv', folder)
-        createCsv('vep.vcf', '/combined_' + folder + '.tsv', folder)
-        #addFreq(folder)
+if __name__ == "__main__":
+    for folder in ['anno_soma', 'anno_germ']:
+        if os.path.isdir(wd + '/' + folder): 
+            createCsv('vep.vcf.pass.vcf', '/combined_passed_' + folder + '.tsv', folder)
+            createCsv('vep.vcf', '/combined_' + folder + '.tsv', folder)
+            #addFreq(folder)

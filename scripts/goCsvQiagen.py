@@ -178,6 +178,7 @@ def addFreq():
     def many_vars(DF, l):
         return DF[DF['VARIANT'] == l][['SAMPLE', 'FORMAT_AF']]
 
-createCsv('vep.vcf.pass.vcf', '/combined_passed.csv')
-createCsv('vep.vcf', '/combined.csv')
-#addFreq()
+if __name__ == "__main__":
+    createCsv('vep.vcf.pass.vcf', '/combined_passed.csv')
+    createCsv('vep.vcf', '/combined.csv')
+    #addFreq()

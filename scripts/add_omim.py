@@ -118,30 +118,31 @@ def get_region_info(df):
         'Target_region'] = 'ДА'
     return df
 
-df = pd.read_csv(os.path.join(wd, 'xl_results', 'results.tsv'), sep = '\t')
+if __name__ == "__main__":
+    df = pd.read_csv(os.path.join(wd, 'xl_results', 'results.tsv'), sep = '\t')
 
-samples = list(df['Проба'].unique())
-samples = [i + '.xlsx' for i in samples]
+    samples = list(df['Проба'].unique())
+    samples = [i + '.xlsx' for i in samples]
 
-for s in samples:
-    print('Adding OMIM info to', s)
-    df_map = pd.read_excel(os.path.join(wd, 'xl_results', s), sheet_name=None)
-    with pd.ExcelWriter(
-        os.path.join(wd, 'xl_results', s),
-        mode='w'
-    ) as writer:
-        for k in df_map:
-            print('List', k)
-            if k != 'all':
-                df_map[k] = add_omim(df_map[k])
-                df_map[k] = get_region_info(df_map[k])
-                if len(df_map[k].columns.tolist()) != len(order):
-                    raise Exception('Change order list!!!')
-                df_map[k] = df_map[k][order]
-                vardict = get_vardict(df_map[k])
-                df_map[k] = df_map[k].fillna(".")
-                df_map[k] = df_map[k].style \
-                    .applymap(gene_style, vard = vardict, subset=pd.IndexSlice[:, ['Ген']])\
-                    .applymap(genotype_style, subset=pd.IndexSlice[:, ['Генотип']])\
-                    .applymap(omim_style, subset=pd.IndexSlice[:, ['OMIM']])
-            df_map[k].to_excel(writer, sheet_name = k, index = None)
+    for s in samples:
+        print('Adding OMIM info to', s)
+        df_map = pd.read_excel(os.path.join(wd, 'xl_results', s), sheet_name=None)
+        with pd.ExcelWriter(
+            os.path.join(wd, 'xl_results', s),
+            mode='w'
+        ) as writer:
+            for k in df_map:
+                print('List', k)
+                if k != 'all':
+                    df_map[k] = add_omim(df_map[k])
+                    df_map[k] = get_region_info(df_map[k])
+                    if len(df_map[k].columns.tolist()) != len(order):
+                        raise Exception('Change order list!!!')
+                    df_map[k] = df_map[k][order]
+                    vardict = get_vardict(df_map[k])
+                    df_map[k] = df_map[k].fillna(".")
+                    df_map[k] = df_map[k].style \
+                        .applymap(gene_style, vard = vardict, subset=pd.IndexSlice[:, ['Ген']])\
+                        .applymap(genotype_style, subset=pd.IndexSlice[:, ['Генотип']])\
+                        .applymap(omim_style, subset=pd.IndexSlice[:, ['OMIM']])
+                df_map[k].to_excel(writer, sheet_name = k, index = None)

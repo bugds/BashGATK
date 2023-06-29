@@ -237,42 +237,43 @@ def classify_benign(dfd):
         dfd['soma']['Макс_попул_ч-та'] = dfd['soma']['Макс_попул_ч-та'].replace(-1, '.')
     return dfd
 
-dfd = dict()
-if os.path.exists(wd + '/combined_passed_anno_germ.tsv'):
-    dfd['germ'] = list()
-    for chunk in pd.read_csv(wd + '/combined_passed_anno_germ.tsv', sep = '\t', chunksize=chunk_size):
-        chunk['Коллер'] = 'DeepVariant'
-        dfd['germ'].append(chunk)
-    print('Germline DF read')
-if os.path.exists(wd + '/combined_passed_anno_soma.tsv'):
-    dfd['soma'] = list()
-    for chunk in pd.read_csv(wd + '/combined_passed_anno_soma.tsv', sep = '\t', chunksize=chunk_size):
-        chunk['Коллер'] = 'Mutect2'
-        dfd['soma'].append(chunk)
-    print('Somatic DF read')
+if __name__ == "__main__":
+    dfd = dict()
+    if os.path.exists(wd + '/combined_passed_anno_germ.tsv'):
+        dfd['germ'] = list()
+        for chunk in pd.read_csv(wd + '/combined_passed_anno_germ.tsv', sep = '\t', chunksize=chunk_size):
+            chunk['Коллер'] = 'DeepVariant'
+            dfd['germ'].append(chunk)
+        print('Germline DF read')
+    if os.path.exists(wd + '/combined_passed_anno_soma.tsv'):
+        dfd['soma'] = list()
+        for chunk in pd.read_csv(wd + '/combined_passed_anno_soma.tsv', sep = '\t', chunksize=chunk_size):
+            chunk['Коллер'] = 'Mutect2'
+            dfd['soma'].append(chunk)
+        print('Somatic DF read')
 
-if len(dfd) == 0:
-    print('No files to analyze')
-else:
-    for k in dfd:
-        for i in range(0, len(dfd[k])):
-            dfd[k][i] = add_id(dfd[k][i])
-            dfd[k][i] = correct_GT(dfd[k][i])
-            dfd[k][i] = dfd[k][i].rename(columns = rusDict)
-            dfd[k][i] = add_predictions(dfd[k][i])
-            dfd[k][i] = replace_hexs(dfd[k][i])
-            dfd[k][i] = add_popfreq(dfd[k][i])
-            print('Dataframe reformatted')
-            dfd[k][i] = add_trust(dfd[k][i])
-            print('Trust evaluated')
-            dfd[k][i] = add_inhouse_freq(dfd[k][i])
-            print('Inhouse population frequency updated')
-            dfd[k][i] = ac.classify(dfd[k][i])
-            dfd[k][i] = dfd[k][i].fillna(".")
-            dfd[k][i] = order_cols(dfd[k][i])
-        dfd[k] = pd.concat(dfd[k], ignore_index = True)
-    dfd = classify_benign(dfd)
-    print('Variants classified')
-    df = pd.concat(dfd.values())
-    df = df.sort_values(by = ['Хромосома', 'Позиция'])
-    df.to_csv(wd + '/rus2.tsv', sep = '\t', index = False)
+    if len(dfd) == 0:
+        print('No files to analyze')
+    else:
+        for k in dfd:
+            for i in range(0, len(dfd[k])):
+                dfd[k][i] = add_id(dfd[k][i])
+                dfd[k][i] = correct_GT(dfd[k][i])
+                dfd[k][i] = dfd[k][i].rename(columns = rusDict)
+                dfd[k][i] = add_predictions(dfd[k][i])
+                dfd[k][i] = replace_hexs(dfd[k][i])
+                dfd[k][i] = add_popfreq(dfd[k][i])
+                print('Dataframe reformatted')
+                dfd[k][i] = add_trust(dfd[k][i])
+                print('Trust evaluated')
+                dfd[k][i] = add_inhouse_freq(dfd[k][i])
+                print('Inhouse population frequency updated')
+                dfd[k][i] = ac.classify(dfd[k][i])
+                dfd[k][i] = dfd[k][i].fillna(".")
+                dfd[k][i] = order_cols(dfd[k][i])
+            dfd[k] = pd.concat(dfd[k], ignore_index = True)
+        dfd = classify_benign(dfd)
+        print('Variants classified')
+        df = pd.concat(dfd.values())
+        df = df.sort_values(by = ['Хромосома', 'Позиция'])
+        df.to_csv(wd + '/rus2.tsv', sep = '\t', index = False)

@@ -104,13 +104,10 @@ def save_sample_df(var_df):
         & (var_df['Маска'] != '.')
     ].to_csv(os.path.join(wd, 'xl_results', 'results.tsv'), sep = '\t', index = None)
     
-
-def main():
+if __name__ == "__main__":
     ref_df = read_refGene(reference)
     mask_dict = read_mask_files()
     bed_names = get_masks(ref_df, mask_dict, maskGenes)
     sort_and_merge(bedtools, bed_names)
     var_df = filter_variants(wd, maskGenes)
     save_sample_df(var_df)
-
-main()
