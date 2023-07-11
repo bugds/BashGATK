@@ -35,8 +35,8 @@ elif [ $command == '2csv' ]; then
     conda activate spliceai
     python3 ${scriptsDirectory}/run_spliceai.py
     conda activate stat
-    python3 ${scriptsDirectory}/run_phylongs.py
     python3 ${scriptsDirectory}/add_omim.py
+    python3 ${scriptsDirectory}/run_phylongs.py
 elif [ $command == '2csvq' ]; then
     source $conda
     conda activate stat
