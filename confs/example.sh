@@ -1,11 +1,14 @@
 # bashgatk.sh
 
 export outputFolder=''
+export conda='/home/bioinfuser/applications/miniconda3/etc/profile.d/conda.sh'
 export nameSubString='N'
 export laneSubString='L'
 export scriptsDirectory='/home/bioinfuser/applications/BashGATK/scripts'
 export gatk='/home/bioinfuser/applications/gatk-4.2.5.0/gatk'
+export fastqc='/home/bioinfuser/applications/FastQC/fastqc'
 export samtools='/home/bioinfuser/applications/samtools-1.3.1/samtools'
+export bedtools='/home/bioinfuser/applications/bedtools.static.binary'
 export picard='/home/bioinfuser/applications/picard-2.16.0/picard.jar'
 export bwa='/home/bioinfuser/applications/bwa-0.7.15/bwa'
 export refFasta='/home/bioinfuser/data/hg38/hg38.fasta'
@@ -16,29 +19,26 @@ export millisVcf='/home/bioinfuser/data/hg38/Mills_and_1000G_gold_standard.indel
 export millisVcfIdx='/home/bioinfuser/data/hg38/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz.tbi'
 export indelsVcf='/home/bioinfuser/data/hg38/known_indels.hg38.vcf.gz'
 export indelsVcfIdx='/home/bioinfuser/data/hg38/known_indels.hg38.vcf.gz.tbi'
+export regions='/home/bioinfuser/data/kapa_hyperexome_files/KAPA_HyperExome_hg38_capture_targets.bed'
 export compressionLevel=5
 export platform=ILLUMINA
 
 if [[ $command == 'proc' ]]; then
     # parallelProcessing.sh
-    export opticalPixelDistance=100 #In general, a pixel distance of 100 is recommended for data generated using unpatterned flowcells (e.g. HiSeq2500) and a pixel distance of 2500 is recommended for patterned flowcells (e.g. NovaSeq/HiSeq4000).
-    export fastqc='/home/bioinfuser/applications/FastQC/fastqc'
+    export optimal_dup_pixel_distance=100 #In general, a pixel distance of 100 is recommended for data generated using unpatterned flowcells (e.g. HiSeq2500) and a pixel distance of 2500 is recommended for patterned flowcells (e.g. NovaSeq/HiSeq4000).
     export trimmomatic='java -jar /home/bioinfuser/applications/Trimmomatic-0.39/trimmomatic-0.39.jar'
     export trimCommandLine='ILLUMINACLIP:/home/bioinfuser/applications/Trimmomatic-0.39/adapters/TruSeq3-PE-3.fa:2:30:10 LEADING:30 TRAILING:30 SLIDINGWINDOW:20:35 MINLEN:120'
     export inputFolder="${outputFolder}/fastq/"
-    export regions='/home/bioinfuser/data/kapa_hyperexome_files/KAPA_HyperExome_hg38_capture_targets.bed'
     export bwaVersion="$($bwa 2>&1 | grep -e '^Version' | sed 's/Version: //')"
     export bwaCommandline="$bwa mem -K 100000000 -p -v 3 -t 16 -Y $refFasta"
     export parallelJobs=3
     export lane=1
 elif [[ $command == 'procAmp' ]]; then
     # parallelProcessingAmpliconBased.sh
-    export opticalPixelDistance=100
-    export fastqc='/home/bioinfuser/applications/FastQC/fastqc'
+    export optimal_dup_pixel_distance=100
     export trimmomatic='java -jar /home/bioinfuser/applications/Trimmomatic-0.39/trimmomatic-0.39.jar'
     export trimCommandLine='ILLUMINACLIP:/home/bioinfuser/applications/Trimmomatic-0.39/adapters/TruSeq3-PE-3.fa:2:30:10 LEADING:30 TRAILING:30 SLIDINGWINDOW:20:35 MINLEN:120'
     export inputFolder="${outputFolder}/fastq/"
-    export regions='/home/bioinfuser/data/kapa_hyperexome_files/KAPA_HyperExome_hg38_capture_targets.bed'
     export bwaVersion="$($bwa 2>&1 | grep -e '^Version' | sed 's/Version: //')"
     export bwaCommandline="$bwa mem -K 100000000 -p -v 3 -t 16 -Y $refFasta"
     export parallelJobs=3
@@ -50,7 +50,6 @@ elif [[ $command == 'procWGS' ]]; then
     export bwaCommandline="$bwa mem -K 100000000 -p -v 3 -t 16 -Y $refFasta"
 elif [[ $command == 'somaSNP' ]]; then
     # parallelSomaticSNP.sh
-    export regions='/home/bioinfuser/data/kapa_hyperexome_files/capture_targets.interval_list'
     export refImg='/home/bioinfuser/data/hg38/hg38.fasta.img'
     export gnomad='/home/bioinfuser/data/kapa_hyperexome_files/AFonly.vcf'
     export variantsForContamination='/home/bioinfuser/data/kapa_hyperexome_files/variants_for_contamination.vcf'
@@ -59,29 +58,25 @@ elif [[ $command == 'somaSNP' ]]; then
     export javaOpt="-Xms3000m"
 elif [[ $command == 'germSNP' ]]; then
     # parallelGermlineSNP.sh
-    export regions='/home/bioinfuser/data/kapa_hyperexome_files/capture_targets.interval_list'
     export parallelJobs=5
     export javaOpt="-Xms3000m"
 elif [[ $command == 'anno' ]]; then
     # annotation.sh
     export vep='/home/bioinfuser/applications/ensembl-vep/vep'
-    export fasta='/home/bioinfuser/.vep/homo_sapiens/101_GRCh38/Homo_sapiens.GRCh38.dna.primary_assembly.fa'
+    export bufferSize=500
+    export inputFolder="${outputFolder}"
     export annovar='/home/bioinfuser/applications/annovar/table_annovar.pl'
     export annovarDb='/home/bioinfuser/applications/annovar/humandb/'
     export bcftools='/home/bioinfuser/applications/bcftools-1.15/bin/bcftools'
     export buildVer=hg38
-    export protocol='refGene,ensGene,gnomad211_exome,gnomad30_genome,dbnsfp42a,dbscsnv11,clinvar_latest,cosmic95_coding,cosmic95_noncoding,avsnp150'
+    export protocol='refGene,ensGene,gnomad211_exome,gnomad312_genome,dbnsfp42a,dbscsnv11,clinvar_latest,cosmic97_coding,cosmic97_noncoding,avsnp150'
     export operation='g,g,f,f,f,f,f,f,f,f'
     export xreffile='/home/bioinfuser/applications/annovar/example/gene_fullxref.txt'
-    export parallelJobs=10
+    export parallelJobs=12
     export update_annovar_db='/home/bioinfuser/applications/update_annovar_db/bugds_update.sh'
-elif [[ $command == 'btil' ]]; then
-    # bed_to_interval_list.sh
-    export regions='/home/bioinfuser/data/kapa_hyperexome_files/KAPA_HyperExome_hg38_capture_targets.bed'
 elif [[ $command == 'cvfc' ]]; then
     # create_variants_for_contamination.sh
     export wd='/home/bioinfuser/data/kapa_hyperexome_files'
-    export regions='/home/bioinfuser/data/kapa_hyperexome_files/KAPA_HyperExome_hg38_capture_targets.bed'
     export gnomad='/home/bioinfuser/data/hg38/gnomad/gnomad.exomes.r2.1.1.sites.liftover_grch38.vcf'
     export minimumAlleleFrequency=0.05
     export javaOpt="-Xms3000m"
@@ -98,61 +93,47 @@ elif [[ $command == 'cnvk' ]]; then
 elif [[ $command == 'deep' ]]; then
     # deepvariant.sh
     export numCpu=16
-    export regions='/home/bioinfuser/data/kapa_hyperexome_files/KAPA_HyperExome_hg38_capture_targets.bed'
+    export parallelJobs=5
     export binVersion='latest'
     export refFolder='/home/bioinfuser/'
     export refFastaPathPart='data/hg38/hg38.fasta'
-    export regionsPathPart='data/kapa_hyperexome_files/KAPA_HyperExome_hg38_capture_targets.bed'
-elif [[ $command == 'cint' ]]; then
-    # createIntervals.sh
-    export bedtools='/home/bioinfuser/applications/bedtools.static.binary'
+# elif [[ $command == 'cint' ]]; then
+#     # createIntervals.sh
 elif [[ $command == 'aved' ]]; then
     # averageDepth.sh
-    export regions='/home/bioinfuser/data/kapa_hyperexome_files/KAPA_HyperExome_hg38_capture_targets.bed'
     export parallelJobs=12
 elif [[ $command == 'qgen' ]]; then
     # annotationQiagen.sh
     export chain='/home/bioinfuser/data/hg38/hg19ToHg38.over.chain'
-    export bedtools='/home/bioinfuser/applications/bedtools.static.binary'
 elif [[ $command == 'afcvfc' ]]; then
     # create_variants_for_contamination_only_af.sh
     export wd='/home/bioinfuser/data/kapa_hyperexome_files'
-    export regions='/home/bioinfuser/data/kapa_hyperexome_files/KAPA_HyperExome_hg38_capture_targets.bed'
     export gnomad='/home/bioinfuser/data/hg38/gnomad/somatic-hg38_af-only-gnomad.hg38.vcf'
     export minimumAlleleFrequency=0.05
     export javaOpt="-Xms3000m"
-elif [[ $command == 'kapaumi' ]]; then
+elif [[ $command == 'kumi' ]]; then
     # kapaumi.sh
-    export opticalPixelDistance=2500 #In general, a pixel distance of 100 is recommended for data generated using unpatterned flowcells (e.g. HiSeq2500) and a pixel distance of 2500 is recommended for patterned flowcells (e.g. NovaSeq/HiSeq4000).
+    export optimal_dup_pixel_distance=2500 #In general, a pixel distance of 100 is recommended for data generated using unpatterned flowcells (e.g. HiSeq2500) and a pixel distance of 2500 is recommended for patterned flowcells (e.g. NovaSeq/HiSeq4000).
     export fastp='/home/bioinfuser/applications/fastp/fastp'
-    export fgbio='java -jar /home/bioinfuser/applications/fgbio/fgbio-2.0.2.jar'
+    export fgbio='/home/bioinfuser/applications/fgbio/fgbio-2.0.2.jar'
     export inputFolder="${outputFolder}/fastq/"
-    export regions='/home/bioinfuser/data/kapa_hyperexome_files/KAPA_HyperExome_hg38_capture_targets.bed'
     export bwaVersion="$($bwa 2>&1 | grep -e '^Version' | sed 's/Version: //')"
     export bwaCommandline1="$bwa mem -t 10 -M $refFasta"
     export bwaCommandline2="$bwa mem -v 3 -t 8 -Y -M $refFasta"
     export parallelJobs=3
     export lane=1
 elif [[ $command == '2csv' ]]; then
-    # 2rus.py and others
+    # 2rus.py
     export depth_limit=10
     export af_limit=0.02
     export paf_limit=0.05
     export freq_file='/home/bioinfuser/data/kapa_hyperexome_files/freqs.tsv'
     export clinvar='/home/bioinfuser/applications/annovar/humandb/hg38_clinvar_latest.txt'
-    export bedtools='/home/bioinfuser/applications/bedtools.static.binary'
     export constraint='/home/bioinfuser/data/hg38/gnomad/gnomad.v2.1.1.lof_metrics.by_gene.txt'
     export reference='/home/bioinfuser/data/hg38/gencode_v42_genes.gff3'
     export maskGenes='/home/bioinfuser/data/kapa_hyperexome_files/mask_genes'
     export annotation='grch38'
     export omim='/home/bioinfuser/data/hg38/OMIM/genemap2_redacted.tsv'
-    export regions='/home/bioinfuser/data/kapa_hyperexome_files/KAPA_HyperExome_hg38_capture_targets.bed'
-elif [[ $command == 'mask' ]]; then
-    export reference='/home/bioinfuser/data/hg38/gencode_v42_genes.gff3'
-    export maskGenes='/home/bioinfuser/data/kapa_hyperexome_files/mask_genes'
-    export bedtools='/home/bioinfuser/applications/bedtools.static.binary'
-    export omim='/home/bioinfuser/data/hg38/OMIM/genemap2_redacted.tsv'
-elif [[ $command == 'spai' ]]; then
-    # run_spliceai.py
-    export annotation='grch38'
+    export knownScores='/home/bioinfuser/data/hg38/spliceAIscores.tsv'
+    export phylongs='/home/bioinfuser/data/hg38/phylongs/varlist.txt'
 fi
