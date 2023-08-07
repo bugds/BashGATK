@@ -12,9 +12,10 @@ function makeDirectory {
 }
 
 function indexVcf {
+    gunzip -c $gnomad > ${wd}/uncompressed_gnomad.vcf
     $gatk --java-options "${javaOpt}" \
       IndexFeatureFile \
-        -I $gnomad
+        -I ${wd}/uncompressed_gnomad.vcf
 }
 
 function selectVariants {
@@ -22,10 +23,12 @@ function selectVariants {
 
     $gatk --java-options "${javaOpt}" \
       SelectVariants \
-        -V $gnomad \
+        -V ${wd}/uncompressed_gnomad.vcf \
         -L $regions \
         -O ${wd}/AFonly.vcf \
         --lenient
+    
+    rm ${wd}/uncompressed_gnomad.vcf
 }
 
 function indexVcf2 {
