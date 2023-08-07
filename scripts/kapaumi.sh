@@ -31,6 +31,7 @@ function getMetadata {
     for s in $substrings; do
         if [[ ${s:0:1} == $nameSubString ]]; then 
             sample=${s:1}
+            echo $sample
             name=${s:1}
         elif [[ ${s:0:1} == $laneSubString ]]; then
             lane=${s:1}
@@ -351,7 +352,7 @@ function markDuplicates {
         --OUTPUT ${outputFolder}duplicates_marked/$(basename -- ${1}) \
         --METRICS_FILE ${outputFolder}duplicates_marked/$(basename -- ${1}).mtrx \
         --VALIDATION_STRINGENCY SILENT \
-        --OPTICAL_DUPLICATE_PIXEL_DISTANCE 2500 \
+        --OPTICAL_DUPLICATE_PIXEL_DISTANCE $optimal_dup_pixel_distance \
         --SORTING_COLLECTION_SIZE_RATIO 0.25 \
         --ASSUME_SORT_ORDER queryname \
         --CREATE_MD5_FILE true
@@ -486,5 +487,7 @@ sleep 1
 
 parallelRun getDepths "${outputFolder}sorted/*.bam"
 cat ${outputFolder}depths/*.txt > "${outputFolder}depths/depthReport_germinal.out"
+
+# DEEPVARIANT DOESNT REQUIRE BQSR: 10.1016/j.xpro.2022.101418
 
 sleep 1
