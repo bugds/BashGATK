@@ -9,15 +9,13 @@ export config=$2
 source $config
 
 if [ $command == 'proc' ]; then
-    bash ${scriptsDirectory}/parallelProcessing.sh
+    bash ${scriptsDirectory}/parallel_processing.sh
 elif [ $command == 'procAmp' ]; then
-    bash ${scriptsDirectory}/parallelProcessingAmpliconBased.sh
-elif [ $command == 'procWGS' ]; then
-    bash ${scriptsDirectory}/processingWGS.sh
-elif [ $command == 'somaSNP' ]; then
-    bash ${scriptsDirectory}/parallelSomaticSNP.sh
-elif [ $command == 'germSNP' ]; then
-    bash ${scriptsDirectory}/parallelGermlineSNP.sh
+    bash ${scriptsDirectory}/amplicon_based_processing.sh
+elif [ $command == 'mutect2' ]; then
+    bash ${scriptsDirectory}/run_mutect2.sh
+elif [ $command == 'hapcall' ]; then
+    bash ${scriptsDirectory}/run_haplotype_caller.sh
 elif [ $command == 'anno' ]; then
     bash ${scriptsDirectory}/annotation.sh
 elif [ $command == 'qgen' ]; then
@@ -25,11 +23,11 @@ elif [ $command == 'qgen' ]; then
 elif [ $command == 'btil' ]; then
     bash ${scriptsDirectory}/bed_to_interval_list.sh
 elif [ $command == 'cvfc' ]; then
-    bash ${scriptsDirectory}/create_variants_for_contamination.sh
+    bash ${scriptsDirectory}/create_variants_for_contamination_only_af.sh
 elif [ $command == '2csv' ]; then
     source $conda
     conda activate stat
-    python3 ${scriptsDirectory}/goCsv.py
+    python3 ${scriptsDirectory}/go_csv.py
     python3 ${scriptsDirectory}/2rus.py
     python3 ${scriptsDirectory}/create_gene_mask.py
     conda activate spliceai
@@ -40,21 +38,15 @@ elif [ $command == '2csv' ]; then
 elif [ $command == '2csvq' ]; then
     source $conda
     conda activate stat
-    python3 ${scriptsDirectory}/goCsvQiagen.py
+    python3 ${scriptsDirectory}/go_csv_qgen.py
 elif [ $command == 'cnvk' ]; then
     bash ${scriptsDirectory}/run_cnvkit.sh
 elif [ $command == 'deep' ]; then
     bash ${scriptsDirectory}/deepvariant.sh
-elif [ $command == 'deep19' ]; then
-    bash ${scriptsDirectory}/deepvariant.sh
-elif [ $command == 'cnvk19' ]; then
-    bash ${scriptsDirectory}/run_cnvkit.sh
 elif [ $command == 'cint' ]; then
     bash ${scriptsDirectory}/createIntervals.sh
 elif [ $command == 'aved' ]; then
-    bash ${scriptsDirectory}/averageDepth.sh
-elif [ $command == 'afcvfc' ]; then
-    bash ${scriptsDirectory}/create_variants_for_contamination_only_af.sh $outputFolder
+    bash ${scriptsDirectory}/average_depth.sh
 elif [ $command == 'kumi' ]; then
     source $conda
     conda activate fastqc

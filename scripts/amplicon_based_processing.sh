@@ -15,7 +15,7 @@ function getMetadata {
         # elif [[ ${s:0:3} == "MED" ]]; then
         #    name=$s
         elif [[ ${s:0:1} == $laneSubString ]]; then
-            library=${s:1}
+            lane=${s:1}
         elif [[ ${s:0:1} == "R" ]]; then
             if [[ ${s:1:2} == "1" ]]; then
                 direction=true
@@ -25,6 +25,7 @@ function getMetadata {
         fi
     done
 }
+export -f getMetadata
 
 function forwardToReverse {
     local forwardPath=$1
@@ -40,6 +41,7 @@ function forwardToReverse {
         exit 1
     fi
 }
+export -f forwardToReverse
 
 function makeDirectory {
     local newDirectory=$1
@@ -50,7 +52,8 @@ function makeDirectory {
 }
 
 function fastqQualityControl {
-    $fastqc $1 -o $2
+    $fastqc -t $parallelJobs $1 -o $2
+    multiqc -f $2 -o $2
 }
 
 function trimFastq {
@@ -60,39 +63,40 @@ function trimFastq {
         getMetadata $forward
         if $direction; then
             forwardToReverse $forward
-            $trimmomatic PE \
-                $forward \
-                $reverse \
-                "${outputFolder}trimmed/$(basename -- $forward)" \
-                "${outputFolder}unpaired/$(basename -- $forward)" \
-                "${outputFolder}trimmed/$(basename -- $reverse)" \
-                "${outputFolder}unpaired/$(basename -- $reverse)" \
-                $trimCommandLine
+            $fastp \
+                -i $forward \
+                -I $reverse \
+                -o "${outputFolder}trimmed/$(basename -- $forward)" \
+                -O "${outputFolder}trimmed/$(basename -- $reverse)" \
+                -g -W 5 -q 20 -u 40 -x -3 -l 75 -c \
+                -j "${outputFolder}qc_2/${output}_fastp.json" \
+                -h "${outputFolder}qc_2/${output}_fastp.html" \
+                -w 12
         fi
     done
 }
 
 function fastqToSam {
+    local basename=$(basename -- $forward)
+
     $gatk FastqToSam \
         -F1 $forward \
         -F2 $reverse \
-        -O "${outputFolder}unmapped/${name}.bam" \
+        -O "${outputFolder}unmapped/${basename}.bam" \
         -RG "rg${sample}:${lane}" \
         -SM $sample \
-        -LB $library \
+        -LB "Lib" \
         -PL $platform
 }
+export -f fastqToSam
 
 function pairedFastQsToUnmappedBAM {
-    local files="${outputFolder}trimmed/*"
-
-    for forward in $files; do
-        getMetadata $forward
-        if $direction; then
-            forwardToReverse $forward
-            fastqToSam
-        fi
-    done
+    forward=$1
+    getMetadata $forward
+    if $direction; then
+        forwardToReverse $forward
+        fastqToSam
+    fi
 }
 
 function validateSam {
@@ -144,7 +148,7 @@ function samToFastqAndBwaMem {
         --ATTRIBUTES_TO_RETAIN X0 \
         --ALIGNED_BAM "${outputFolder}unmerged/${output}.bam" \
         --UNMAPPED_BAM ${1} \
-        --OUTPUT "${outputFolder}merged/${output}.bam" \
+        --OUTPUT "${outputFolder}premerged/${output}.bam" \
         --REFERENCE_SEQUENCE ${refFasta} \
         --PAIRED_RUN true \
         --SORT_ORDER "unsorted" \
@@ -162,6 +166,35 @@ function samToFastqAndBwaMem {
         --UNMAPPED_READ_STRATEGY COPY_TO_TAG \
         --ALIGNER_PROPER_PAIR_FLAGS true \
         --UNMAP_CONTAMINANT_READS true
+}
+
+function mergeSamFiles {
+    local javaOpt="-Xms4000m"
+
+    filename=$(basename -- $1)
+        
+    substrings=$(echo $filename | tr '_' ' ')
+
+    for s in $substrings; do
+        if [[ ${s:0:1} == $nameSubString ]]; then
+            name=${s:0}
+        fi
+    done
+
+    if [ ! -f "${outputFolder}merged/${name}.bam" ]; then
+        echo $name
+        $samtools merge -r \
+            ${outputFolder}merged/${name}.bam \
+            ${outputFolder}premerged/*${name}*
+    fi
+}
+
+function querynameSort {
+    local javaOpt="-Xms4000m"
+    local bamName=$(basename -- ${1} | cut -d "." -f 1)
+    
+    mv $1 ${1}_temp
+    $samtools sort -n ${1}_temp > $1
 }
 
 function sortAndFixTags {
@@ -226,34 +259,45 @@ function applyBqsr {
 makeDirectory qc_1
 fastqQualityControl "${inputFolder}/*" "${outputFolder}/qc_1"
 
+makeDirectory qc_2
 makeDirectory trimmed
-makeDirectory unpaired
 trimFastq
 sleep 1
 
-makeDirectory qc_2
 fastqQualityControl "${outputFolder}trimmed/*" "${outputFolder}/qc_2"
+sleep 1
 
 makeDirectory unmapped
-pairedFastQsToUnmappedBAM
+parallelRun pairedFastQsToUnmappedBAM "${outputFolder}trimmed/*"
 sleep 1
+rm -r "${outputFolder}trimmed"
 
 makeDirectory temporary_files
 validateSam
 sleep 1
 
 makeDirectory unmerged
-makeDirectory merged
+makeDirectory premerged
 parallelRun samToFastqAndBwaMem "${outputFolder}unmapped/*"
+sleep 1
+rm -r "${outputFolder}unmapped"
+
+makeDirectory merged
+parallelRun mergeSamFiles "${outputFolder}premerged/*"
+sleep 1
+rm -r "${outputFolder}unmerged"
+rm -r "${outputFolder}premerged"
+
+parallelRun querynameSort "${outputFolder}merged/*.bam"
 sleep 1
 
 makeDirectory sorted
 parallelRun sortAndFixTags "${outputFolder}merged/*.bam"
 sleep 1
 
-#makeDirectory temporary_files/recal_reports
-#parallelRun baseRecalibrator "${outputFolder}sorted/*.bam"
-#sleep 1
+makeDirectory temporary_files/recal_reports
+parallelRun baseRecalibrator "${outputFolder}sorted/*.bam"
+sleep 1
 
-#makeDirectory recalibrated
-#parallelRun applyBqsr "${outputFolder}sorted/*.bam"
+makeDirectory recalibrated
+parallelRun applyBqsr "${outputFolder}sorted/*.bam"
