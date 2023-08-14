@@ -73,7 +73,6 @@ function annotate {
     decomposeNormalize $filename
     annotateAnnovar $filename
     annotateVep $filename
-    onlyPASS $filename
 }
 
 bash ${update_annovar_db}
@@ -87,6 +86,7 @@ then
     files=${outputFolder}/mutect2/*/*.filtered.vcf
     for filename in $files; do
         annotate $filename
+        onlyPASS $filename
     done
     rm ${outputFolder}/${folder}/*step1
     rm ${outputFolder}/${folder}/*step2
@@ -102,6 +102,22 @@ then
     gunzip -k -f ${outputFolder}/deepvariant/*.vcf.gz
     rm -f ${outputFolder}/deepvariant/*.g.vcf
     files=${outputFolder}/deepvariant/*.vcf
+    for filename in $files; do
+        annotate $filename
+        onlyPASS $filename
+    done
+    rm ${outputFolder}/${folder}/*step1
+    rm ${outputFolder}/${folder}/*step2
+    rm ${outputFolder}/${folder}/*anno.vcf
+    rm ${outputFolder}/${folder}/*anno.txt
+    rm ${outputFolder}/${folder}/*anno.avinput
+fi
+
+if [[ -d "${outputFolder}/haplotype_caller" ]]
+then
+    export folder="anno_hapc"
+    makeDirectory $folder
+    files=${outputFolder}/haplotype_caller/*.vcf
     for filename in $files; do
         annotate $filename
     done
