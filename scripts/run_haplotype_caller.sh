@@ -26,12 +26,7 @@ function haplotypeCaller {
         -R $refFasta \
         -I $1 \
         -L $regions \
-        -O ${outputFolder}haplotype_caller/${bamName}.vcf \
-        -ERC GVCF \
-        -contamination 0 \
-        -G StandardAnnotation \
-        -G AS_StandardAnnotation \
-        -G StandardHCAnnotation
+        -O ${outputFolder}haplotype_caller/${bamName}.vcf
 }
 
 makeDirectory haplotype_caller
