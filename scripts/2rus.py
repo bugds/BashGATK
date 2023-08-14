@@ -188,8 +188,11 @@ def add_trust(df):
 
 def add_inhouse_freq(df):
     df['temp_id'] = df['Хромосома'] + ':' + df['Позиция'].astype(str) + ':' + df['Реф_аллель'] + '>' + df['Альт_аллель'] + '_' + df['Коллер']
-    freq = pd.read_csv(freq_file, sep = '\t')
-    freq = pd.concat([freq, df[['temp_id', 'Проба']]])
+    if os.path.exists(freq_file):
+        freq = pd.read_csv(freq_file, sep = '\t')
+        freq = pd.concat([freq, df[['temp_id', 'Проба']]])
+    else:
+        freq = df[['temp_id', 'Проба']]
     freq = freq.drop_duplicates()
     freq.to_csv(freq_file, index = False, sep = '\t')
     counts = freq['temp_id'].value_counts()
