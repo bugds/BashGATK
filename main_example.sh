@@ -11,7 +11,7 @@ conf='./confs/example.sh'
 echo "$(date): Processing completed" >> ./bashgatk.log
 ./bashgatk.sh deep $conf
 echo "$(date): DeepVariant ready" >> ./bashgatk.log
-./bashgatk.sh somaSNP $conf
+./bashgatk.sh mutect2 $conf
 echo "$(date): SomaticSNP ready" >> ./bashgatk.log
 ./bashgatk.sh anno $conf
 echo "$(date): Annotation completed" >> ./bashgatk.log
