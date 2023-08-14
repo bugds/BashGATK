@@ -1,93 +1,102 @@
 # bashgatk.sh
 
-export outputFolder=''
-export conda='/home/bioinfuser/applications/miniconda3/etc/profile.d/conda.sh'
-export nameSubString='N'
-export laneSubString='L'
-export scriptsDirectory='/home/bioinfuser/applications/BashGATK/scripts'
-export gatk='/home/bioinfuser/applications/gatk-4.2.5.0/gatk'
-export fastqc='/home/bioinfuser/applications/FastQC/fastqc'
-export samtools='/home/bioinfuser/applications/samtools-1.3.1/samtools'
-export bedtools='/home/bioinfuser/applications/bedtools.static.binary'
-export picard='/home/bioinfuser/applications/picard-2.16.0/picard.jar'
-export bwa='/home/bioinfuser/applications/bwa-0.7.15/bwa'
-export refFasta='/home/bioinfuser/data/hg38/hg38.fasta'
-export refDict='/home/bioinfuser/data/hg38/hg38.dict'
-export dbSnpVcf='/home/bioinfuser/data/hg38/dbsnp138.vcf'
-export dbSnpVcfIdx='/home/bioinfuser/data/hg38/dbsnp138.vcf.idx'
-export millisVcf='/home/bioinfuser/data/hg38/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz'
-export millisVcfIdx='/home/bioinfuser/data/hg38/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz.tbi'
-export indelsVcf='/home/bioinfuser/data/hg38/known_indels.hg38.vcf.gz'
-export indelsVcfIdx='/home/bioinfuser/data/hg38/known_indels.hg38.vcf.gz.tbi'
-export regions='/home/bioinfuser/data/kapa_hyperexome_files/KAPA_HyperExome_hg38_capture_targets.bed'
+export outputFolder='path_to_output_folder'
+export conda='path_to_conda'
+export nameSubString='substring_indicating_sample_name_delimited_by_underscores'
+export laneSubString='substring_indicating_lane_delimited_by_underscores'
+export scriptsDirectory='path_to_scripts_directory_from_the_repository'
+export gatk='path_to_gatk'
+export fastqc='path_to_fastqc'
+export fastp='path_to_fastp'
+export samtools='path_to_samtools-1.3.1'
+export bedtools='path_to_bedtools'
+export picard='path_to_picard-2.16.0'
+export bwa='path_to_bwa-0.7.15'
+export refFasta='path_to_referencial_genome'
+export refDict='path_to_referencial_genome_dictionary'
+export dbSnpVcf='path_to_dbsnp_146.hg38.vcf.gz'
+export dbSnpVcfIdx='path_to_dbsnp_146.hg38.vcf.gz.tbi'
+export millisVcf='path_to_Mills_and_1000G_gold_standard.indels.hg38.vcf.gz'
+export millisVcfIdx='path_to_Mills_and_1000G_gold_standard.indels.hg38.vcf.gz.tbi'
+export indelsVcf='path_to_known_indels.hg38.vcf.gz'
+export indelsVcfIdx='path_to_known_indels.hg38.vcf.gz.tbi'
+export regions='path_to_bed-file_with_regions_enriched_by_your_NGS_kit'
 export compressionLevel=5
-export platform=ILLUMINA
+export platform='platform_name'
 
 if [[ $command == 'proc' ]]; then
-    # parallelProcessing.sh
-    export optimal_dup_pixel_distance=100 #In general, a pixel distance of 100 is recommended for data generated using unpatterned flowcells (e.g. HiSeq2500) and a pixel distance of 2500 is recommended for patterned flowcells (e.g. NovaSeq/HiSeq4000).
-    export trimmomatic='java -jar /home/bioinfuser/applications/Trimmomatic-0.39/trimmomatic-0.39.jar'
-    export trimCommandLine='ILLUMINACLIP:/home/bioinfuser/applications/Trimmomatic-0.39/adapters/TruSeq3-PE-3.fa:2:30:10 LEADING:30 TRAILING:30 SLIDINGWINDOW:20:35 MINLEN:120'
+    # parallel_processing.sh
     export inputFolder="${outputFolder}/fastq/"
     export bwaVersion="$($bwa 2>&1 | grep -e '^Version' | sed 's/Version: //')"
     export bwaCommandline="$bwa mem -K 100000000 -p -v 3 -t 16 -Y $refFasta"
+    export optimal_dup_pixel_distance=100 #In general, a pixel distance of 100 is recommended for data generated using unpatterned flowcells (e.g. HiSeq2500) and a pixel distance of 2500 is recommended for patterned flowcells (e.g. NovaSeq/HiSeq4000).
     export parallelJobs=3
     export lane=1
 elif [[ $command == 'procAmp' ]]; then
-    # parallelProcessingAmpliconBased.sh
-    export optimal_dup_pixel_distance=100
-    export trimmomatic='java -jar /home/bioinfuser/applications/Trimmomatic-0.39/trimmomatic-0.39.jar'
-    export trimCommandLine='ILLUMINACLIP:/home/bioinfuser/applications/Trimmomatic-0.39/adapters/TruSeq3-PE-3.fa:2:30:10 LEADING:30 TRAILING:30 SLIDINGWINDOW:20:35 MINLEN:120'
+    # amplicon_based_processing.sh
+    export opticalPixelDistance=100
     export inputFolder="${outputFolder}/fastq/"
     export bwaVersion="$($bwa 2>&1 | grep -e '^Version' | sed 's/Version: //')"
     export bwaCommandline="$bwa mem -K 100000000 -p -v 3 -t 16 -Y $refFasta"
     export parallelJobs=3
     export lane=1
-elif [[ $command == 'procWGS' ]]; then
-    # processingWGS.sh
-    export inputFolder="${outputFolder}/fastq/"
-    export bwaVersion="$($bwa 2>&1 | grep -e '^Version' | sed 's/Version: //')"
-    export bwaCommandline="$bwa mem -K 100000000 -p -v 3 -t 16 -Y $refFasta"
-elif [[ $command == 'somaSNP' ]]; then
-    # parallelSomaticSNP.sh
-    export refImg='/home/bioinfuser/data/hg38/hg38.fasta.img'
-    export gnomad='/home/bioinfuser/data/kapa_hyperexome_files/AFonly.vcf'
-    export variantsForContamination='/home/bioinfuser/data/kapa_hyperexome_files/variants_for_contamination.vcf'
+elif [[ $command == 'mutect2' ]]; then
+    # run_mutect2.sh
+    export refImg='path_to_hg38.fasta.img'
+    export gnomad='path_to_gnomAD_vcf_file'
+    export variantsForContamination='path_to_variants_for_contamination.vcf'
     export parallelJobs=5
-    export pon='/home/bioinfuser/data/hg38/somatic-hg38_1000g_pon.hg38.vcf'
+    export pon='path_to_somatic-hg38_1000g_pon.hg38.vcf'
     export javaOpt="-Xms3000m"
-elif [[ $command == 'germSNP' ]]; then
-    # parallelGermlineSNP.sh
+elif [[ $command == 'hapcall' ]]; then
+    # run_haplotype_caller.sh
     export parallelJobs=5
     export javaOpt="-Xms3000m"
 elif [[ $command == 'anno' ]]; then
     # annotation.sh
-    export vep='/home/bioinfuser/applications/ensembl-vep/vep'
+    export vep='path_to_vep'
     export bufferSize=500
     export inputFolder="${outputFolder}"
-    export annovar='/home/bioinfuser/applications/annovar/table_annovar.pl'
-    export annovarDb='/home/bioinfuser/applications/annovar/humandb/'
-    export bcftools='/home/bioinfuser/applications/bcftools-1.15/bin/bcftools'
+    export annovar='path_to_table_annovar.pl'
+    export annovarDb='path_to_annovar_database'
+    export bcftools='path_to_bcftools'
     export buildVer=hg38
     export protocol='refGene,ensGene,gnomad211_exome,gnomad312_genome,dbnsfp42a,dbscsnv11,clinvar_latest,cosmic97_coding,cosmic97_noncoding,avsnp150'
     export operation='g,g,f,f,f,f,f,f,f,f'
-    export xreffile='/home/bioinfuser/applications/annovar/example/gene_fullxref.txt'
+    export xreffile='path_to_gene_fullxref.txt'
     export parallelJobs=12
-    export update_annovar_db='/home/bioinfuser/applications/update_annovar_db/bugds_update.sh'
+    export update_annovar_db='path_to_bugds_update.sh'
+elif [[ $command == 'qgen' ]]; then
+    # annotation_qiagen.sh
+    export chain='path_to_hg19ToHg38.over.chain'
 elif [[ $command == 'cvfc' ]]; then
-    # create_variants_for_contamination.sh
-    export wd='/home/bioinfuser/data/kapa_hyperexome_files'
-    export gnomad='/home/bioinfuser/data/hg38/gnomad/gnomad.exomes.r2.1.1.sites.liftover_grch38.vcf'
+    # create_variants_for_contamination_only_af.sh
+    export wd='path_to_directory_with_gnomAD_data'
+    export gnomad='path_to_somatic-hg38_af-only-gnomad.hg38.vcf.gz'
     export minimumAlleleFrequency=0.05
     export javaOpt="-Xms3000m"
+elif [[ $command == '2csv' ]]; then
+    # go_csv.py --> run_phylongs.py
+    export depth_limit=10
+    export af_limit=0.02
+    export paf_limit=0.05
+    export freq_file='path_to_your_freqs.tsv'
+    export clinvar='path_to_hg38_clinvar_latest.txt'
+    export constraint='path_to_gnomad.v2.1.1.lof_metrics.by_gene.txt'
+    export reference='path_to_gencode_v42_genes.gff3'
+    export maskGenes='path_to_mask_genes'
+    export annotation='grch38'
+    export omim='path_to_genemap2_redacted.tsv'
+    export knownScores='path_to_spliceAIscores.tsv'
+    export phylongs='path_to_varlist.txt'
 elif [[ $command == 'cnvk' ]]; then
     # run_cnvkit.sh
-    export cnvkit='python3 /home/bioinfuser/applications/cnvkit/cnvkit.py'
-    export regions='/home/bioinfuser/data/MED/intervals/cnvkit_targets.bed'
-    export antitarget='/home/bioinfuser/data/MED/intervals/cnvkit_antitargets.bed'
-    export mappable='/home/bioinfuser/data/MED/intervals/access-hg38.bed'
-    export refFlat='/home/bioinfuser/data/MED/intervals/hg38.refFlat.txt'
-    export AFonly='/home/bioinfuser/data/MED/intervals/additional/AFonly.vcf'
+    export cnvkit='python3 path_to_cnvkit.py'
+    export regions='path_to_cnvkit_targets.bed'
+    export antitarget='path_to_cnvkit_antitargets.bed'
+    export mappable='path_to_access-hg38.bed'
+    export refFlat='path_to_hg38.refFlat.txt'
+    export AFonly='path_to_gnomAD_AFonly_file'
     export LC_NUMERIC='en_US.UTF-8'
     export javaOpt="-Xms3000m"
 elif [[ $command == 'deep' ]]; then
@@ -95,45 +104,19 @@ elif [[ $command == 'deep' ]]; then
     export numCpu=16
     export parallelJobs=5
     export binVersion='latest'
-    export refFolder='/home/bioinfuser/'
-    export refFastaPathPart='data/hg38/hg38.fasta'
-# elif [[ $command == 'cint' ]]; then
-#     # createIntervals.sh
+    export refFolder='beginning_of_a_path_to_reference'
+    export refFastaPathPart='ending_of_a_path_to_reference'
 elif [[ $command == 'aved' ]]; then
-    # averageDepth.sh
+    # average_depth.sh
     export parallelJobs=12
-elif [[ $command == 'qgen' ]]; then
-    # annotationQiagen.sh
-    export chain='/home/bioinfuser/data/hg38/hg19ToHg38.over.chain'
-elif [[ $command == 'afcvfc' ]]; then
-    # create_variants_for_contamination_only_af.sh
-    export wd='/home/bioinfuser/data/kapa_hyperexome_files'
-    export gnomad='/home/bioinfuser/data/hg38/gnomad/somatic-hg38_af-only-gnomad.hg38.vcf'
-    export minimumAlleleFrequency=0.05
-    export javaOpt="-Xms3000m"
 elif [[ $command == 'kumi' ]]; then
     # kapaumi.sh
-    export optimal_dup_pixel_distance=2500 #In general, a pixel distance of 100 is recommended for data generated using unpatterned flowcells (e.g. HiSeq2500) and a pixel distance of 2500 is recommended for patterned flowcells (e.g. NovaSeq/HiSeq4000).
-    export fastp='/home/bioinfuser/applications/fastp/fastp'
-    export fgbio='/home/bioinfuser/applications/fgbio/fgbio-2.0.2.jar'
+    export fgbio='path_to_fgbio-2.0.2.jar'
     export inputFolder="${outputFolder}/fastq/"
     export bwaVersion="$($bwa 2>&1 | grep -e '^Version' | sed 's/Version: //')"
     export bwaCommandline1="$bwa mem -t 10 -M $refFasta"
     export bwaCommandline2="$bwa mem -v 3 -t 8 -Y -M $refFasta"
+    export optimal_dup_pixel_distance=2500 #In general, a pixel distance of 100 is recommended for data generated using unpatterned flowcells (e.g. HiSeq2500) and a pixel distance of 2500 is recommended for patterned flowcells (e.g. NovaSeq/HiSeq4000).
     export parallelJobs=3
     export lane=1
-elif [[ $command == '2csv' ]]; then
-    # 2rus.py
-    export depth_limit=10
-    export af_limit=0.02
-    export paf_limit=0.05
-    export freq_file='/home/bioinfuser/data/kapa_hyperexome_files/freqs.tsv'
-    export clinvar='/home/bioinfuser/applications/annovar/humandb/hg38_clinvar_latest.txt'
-    export constraint='/home/bioinfuser/data/hg38/gnomad/gnomad.v2.1.1.lof_metrics.by_gene.txt'
-    export reference='/home/bioinfuser/data/hg38/gencode_v42_genes.gff3'
-    export maskGenes='/home/bioinfuser/data/kapa_hyperexome_files/mask_genes'
-    export annotation='grch38'
-    export omim='/home/bioinfuser/data/hg38/OMIM/genemap2_redacted.tsv'
-    export knownScores='/home/bioinfuser/data/hg38/spliceAIscores.tsv'
-    export phylongs='/home/bioinfuser/data/hg38/phylongs/varlist.txt'
 fi
