@@ -24,7 +24,13 @@ export regions='path_to_bed-file_with_regions_enriched_by_your_NGS_kit'
 export compressionLevel=5
 export platform='platform_name'
 
-if [[ $command == 'proc' ]]; then
+if [[ $command == 'cvfc' ]]; then
+    # create_variants_for_contamination_only_af.sh
+    export wd='path_to_directory_with_gnomAD_data'
+    export gnomad='path_to_somatic-hg38_af-only-gnomad.hg38.vcf.gz'
+    export minimumAlleleFrequency=0.05
+    export javaOpt="-Xms3000m"
+elif [[ $command == 'proc' ]]; then
     # parallel_processing.sh
     export inputFolder="${outputFolder}/fastq/"
     export bwaVersion="$($bwa 2>&1 | grep -e '^Version' | sed 's/Version: //')"
@@ -40,6 +46,23 @@ elif [[ $command == 'procAmp' ]]; then
     export bwaCommandline="$bwa mem -K 100000000 -p -v 3 -t 16 -Y $refFasta"
     export parallelJobs=3
     export lane=1
+elif [[ $command == 'kumi' ]]; then
+    # kapaumi.sh
+    export fgbio='path_to_fgbio-2.0.2.jar'
+    export inputFolder="${outputFolder}/fastq/"
+    export bwaVersion="$($bwa 2>&1 | grep -e '^Version' | sed 's/Version: //')"
+    export bwaCommandline1="$bwa mem -t 10 -M $refFasta"
+    export bwaCommandline2="$bwa mem -v 3 -t 8 -Y -M $refFasta"
+    export optimal_dup_pixel_distance=2500 #In general, a pixel distance of 100 is recommended for data generated using unpatterned flowcells (e.g. HiSeq2500) and a pixel distance of 2500 is recommended for patterned flowcells (e.g. NovaSeq/HiSeq4000).
+    export parallelJobs=3
+    export lane=1
+elif [[ $command == 'deep' ]]; then
+    # deepvariant.sh
+    export numCpu=16
+    export parallelJobs=5
+    export binVersion='latest'
+    export refFolder='beginning_of_a_path_to_reference'
+    export refFastaPathPart='ending_of_a_path_to_reference'
 elif [[ $command == 'mutect2' ]]; then
     # run_mutect2.sh
     export refImg='path_to_hg38.fasta.img'
@@ -69,12 +92,6 @@ elif [[ $command == 'anno' ]]; then
 elif [[ $command == 'qgen' ]]; then
     # annotation_qiagen.sh
     export chain='path_to_hg19ToHg38.over.chain'
-elif [[ $command == 'cvfc' ]]; then
-    # create_variants_for_contamination_only_af.sh
-    export wd='path_to_directory_with_gnomAD_data'
-    export gnomad='path_to_somatic-hg38_af-only-gnomad.hg38.vcf.gz'
-    export minimumAlleleFrequency=0.05
-    export javaOpt="-Xms3000m"
 elif [[ $command == '2csv' ]]; then
     # go_csv.py --> run_phylongs.py
     export depth_limit=10
@@ -89,6 +106,9 @@ elif [[ $command == '2csv' ]]; then
     export omim='path_to_genemap2_redacted.tsv'
     export knownScores='path_to_spliceAIscores.tsv'
     export phylongs='path_to_varlist.txt'
+elif [[ $command == 'aved' ]]; then
+    # average_depth.sh
+    export parallelJobs=12
 elif [[ $command == 'cnvk' ]]; then
     # run_cnvkit.sh
     export cnvkit='python3 path_to_cnvkit.py'
@@ -99,24 +119,4 @@ elif [[ $command == 'cnvk' ]]; then
     export AFonly='path_to_gnomAD_AFonly_file'
     export LC_NUMERIC='en_US.UTF-8'
     export javaOpt="-Xms3000m"
-elif [[ $command == 'deep' ]]; then
-    # deepvariant.sh
-    export numCpu=16
-    export parallelJobs=5
-    export binVersion='latest'
-    export refFolder='beginning_of_a_path_to_reference'
-    export refFastaPathPart='ending_of_a_path_to_reference'
-elif [[ $command == 'aved' ]]; then
-    # average_depth.sh
-    export parallelJobs=12
-elif [[ $command == 'kumi' ]]; then
-    # kapaumi.sh
-    export fgbio='path_to_fgbio-2.0.2.jar'
-    export inputFolder="${outputFolder}/fastq/"
-    export bwaVersion="$($bwa 2>&1 | grep -e '^Version' | sed 's/Version: //')"
-    export bwaCommandline1="$bwa mem -t 10 -M $refFasta"
-    export bwaCommandline2="$bwa mem -v 3 -t 8 -Y -M $refFasta"
-    export optimal_dup_pixel_distance=2500 #In general, a pixel distance of 100 is recommended for data generated using unpatterned flowcells (e.g. HiSeq2500) and a pixel distance of 2500 is recommended for patterned flowcells (e.g. NovaSeq/HiSeq4000).
-    export parallelJobs=3
-    export lane=1
 fi
