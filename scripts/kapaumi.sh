@@ -378,6 +378,19 @@ function getDepths {
     $samtools view -c $1 >> ${outputFolder}depths/${bamName}.txt
     echo "Mapped reads:" >> ${outputFolder}depths/${bamName}.txt
     $samtools view -c -F 260 $1 >> ${outputFolder}depths/${bamName}.txt
+
+    cat ${outputFolder}depths/${bamName}.txt \
+      | tr "\n" "\t" \
+      | sed "s/Total reads:\t/Total reads: /" \
+      | sed "s/Mapped reads:\t/Mapped reads: /" \
+      | sed "s/ //g" | sed "s/Average=//" \
+      | sed "s/Stdev=//" \
+      | sed "s/Sub-ten=//" \
+      | sed "s/Totalnucleotides://" \
+      | sed "s/Totalreads://" \
+      | sed "s/Mappedreads://" \
+      | awk -F "\t" '{print $1, $6, $7, $2, $4, $3, $5}' \
+      >> "${outputFolder}depths/depthReport.txt"
 }
 
 # MAIN
@@ -461,8 +474,9 @@ makeDirectory recalibrated
 parallelRun applyBqsr "${outputFolder}sorted/*.bam"
 
 makeDirectory depths
+> "${outputFolder}depths/depthReport.txt"
 parallelRun getDepths "${outputFolder}sorted/*.bam"
-cat ${outputFolder}depths/*.txt > "${outputFolder}depths/depthReport_somatic.out"
+mv "${outputFolder}depths/depthReport.txt" "${outputFolder}depths/depthReport_somatic.txt"
 
 rm -r "${outputFolder}sorted"
 sleep 1
@@ -485,8 +499,9 @@ sleep 1
 rm -r "${outputFolder}duplicates_marked"
 sleep 1
 
+> "${outputFolder}depths/depthReport.txt"
 parallelRun getDepths "${outputFolder}sorted/*.bam"
-cat ${outputFolder}depths/*.txt > "${outputFolder}depths/depthReport_germinal.out"
+mv "${outputFolder}depths/depthReport.txt" "${outputFolder}depths/depthReport_germinal.txt"
 
 # DEEPVARIANT DOESNT REQUIRE BQSR: 10.1016/j.xpro.2022.101418
 

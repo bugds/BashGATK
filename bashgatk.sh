@@ -33,9 +33,9 @@ elif [ $command == 'qgen' ]; then
 elif [ $command == '2csv' ]; then
     source $conda
     conda activate stat
-    python3 ${scriptsDirectory}/go_csv.py
-    python3 ${scriptsDirectory}/2rus.py
-    python3 ${scriptsDirectory}/create_gene_mask.py
+    # python3 ${scriptsDirectory}/go_csv.py
+    # python3 ${scriptsDirectory}/2rus.py
+    # python3 ${scriptsDirectory}/create_gene_mask.py
     conda activate spliceai
     python3 ${scriptsDirectory}/run_spliceai.py
     conda activate stat
