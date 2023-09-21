@@ -12,8 +12,6 @@ function getMetadata {
         if [[ ${s:0:1} == $nameSubString ]]; then 
             sample=${s:1}
             name=${s:1}
-        # elif [[ ${s:0:3} == "MED" ]]; then
-        #    name=$s
         elif [[ ${s:0:1} == $laneSubString ]]; then
             lane=${s:1}
         elif [[ ${s:0:1} == "R" ]]; then
