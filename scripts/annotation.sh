@@ -54,6 +54,7 @@ function annotateVep {
         --buffer_size $bufferSize \
         --no_stats \
         --force_overwrite \
+        --plugin AlphaMissense,file=$AlphaMissensePath \
         -i ${outputFolder}/${folder}/${base}_anno.hg38_multianno.vcf \
         -o ${outputFolder}/${folder}/${base}_vep.vcf
 }
