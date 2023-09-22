@@ -51,7 +51,8 @@ rusDict = {
     'INFO_ANNO_cosmic97_noncoding': 'COSMIC_некодир',
     'INFO_ANNO_CLNSIG': 'Клин_знач',
     'INFO_ANNO_CLNDN': 'Клин_диаг',
-    'INFO_ANNO_avsnp150': 'rsID'
+    'INFO_ANNO_avsnp150': 'rsID',
+    'INFO_VEP_am_class': 'AlphaMissense'
 }
 
 preds = [
@@ -178,6 +179,15 @@ def add_popfreq(df):
     print('Single MAF done')
     return df
 
+def correct_alphamissense(df):
+    def map_alphamissense(am):
+        am = set(am.split(','))
+        if len(am) > 1:
+            am.remove('.')
+        return ','.join(am)
+    df['AlphaMissense'] = df['AlphaMissense'].map(map_alphamissense)
+    return df
+
 def add_trust(df):
     df['Доверие'] = ''
     df.loc[df['Глубина_прочтения'] < depth_limit, 'Доверие'] = 'Низк'
@@ -266,6 +276,7 @@ if __name__ == "__main__":
                 dfd[k][i] = add_predictions(dfd[k][i])
                 dfd[k][i] = replace_hexs(dfd[k][i])
                 dfd[k][i] = add_popfreq(dfd[k][i])
+                dfd[k][i] = correct_alphamissense(dfd[k][i])
                 print('Dataframe reformatted')
                 dfd[k][i] = add_trust(dfd[k][i])
                 print('Trust evaluated')

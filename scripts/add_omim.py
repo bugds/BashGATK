@@ -35,6 +35,7 @@ order = [
     'Добро',
     'Доверие',
     'Target_region',
+    'AlphaMissense',
     # 'PVS1',
     # 'PS1',
     # 'PS2',
