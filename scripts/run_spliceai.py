@@ -38,6 +38,11 @@ if __name__ == "__main__":
             with open(filename, 'r') as inp:
                 vcflines = [i for i in inp.readlines()if i.startswith('##')]
             break
+    elif os.path.exists(os.path.join(wd, 'haplotype_caller')):
+        for filename in glob.glob(os.path.join(wd, 'haplotype_caller', '*.vcf')):
+            with open(filename, 'r') as inp:
+                vcflines = [i for i in inp.readlines()if i.startswith('##')]
+            break
     else:
         raise Exception('No VCF files!!!')
 
@@ -67,14 +72,17 @@ if __name__ == "__main__":
 
     lines = lines_list[0] + lines_list[1]
 
-    score_dict = dict()
-    for i in lines:
-        if 'SpliceAI=' in i:
-            id = i.split('\t')[2]
-            scores = i.split('SpliceAI=')[1].split('|')[2:6]
-            scores = [float(i) for i in scores if i != '.']
-            if scores:
-                score_dict[id] = str(max(scores))
+    with open(spai_scores, 'w') as out:
+        out.write('\t'.join(df.columns) + '\n')
+        score_dict = dict()
+        for i in lines:
+            out.write(i)
+            if 'SpliceAI=' in i:
+                id = i.split('\t')[2]
+                scores = i.split('SpliceAI=')[1].split('|')[2:6]
+                scores = [float(i) for i in scores if i != '.']
+                if scores:
+                    score_dict[id] = str(max(scores))
 
     for s in samples:
         df_map = pd.read_excel(os.path.join(wd, 'xl_results', s), sheet_name=None)
