@@ -134,7 +134,6 @@ if __name__ == "__main__":
         ) as writer:
             for k in df_map:
                 print('List', k)
-                # if k != 'all':
                 df_map[k] = add_omim(df_map[k])
                 df_map[k] = get_region_info(df_map[k])
                 if len(df_map[k].columns.tolist()) != len(order):
