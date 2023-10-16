@@ -1,7 +1,6 @@
 import os
-import sys
 
-wd = os.path.abspath(sys.argv[1])
+wd = os.environ['outputFolder']
 
 global innerDelimeter
 global outerDelimeter
@@ -27,8 +26,8 @@ def dataSizeCheck(varData, headerList):
     if not len(varData) == len(headerList):
         raise Exception('Header size different')
 
-def getData(wd, filename):
-    with open(wd + '/annotation/' + filename, 'r') as vcfFile:
+def getData(wd, filename, folder):
+    with open(wd + '/' + folder + '/' + filename, 'r') as vcfFile:
         lines = vcfFile.readlines()
 
         infoLines = [l.replace('\n', '') for l in lines if l.startswith('##INFO=')]
@@ -70,6 +69,7 @@ def parseFormatColumns(line, headerList, formatList, filename):
 def parseAnnoColumns(varDict, annoList, delimeter=innerDelimeter):
     annoData = varDict['INFO'].split(';')[:-1]
     annoChunk = annoData[:annoData.index(endingAnno)]
+    annoChunk = [c for c in annoChunk if c.split('=')[-1] != '.']
     for c in range(0, annoData.count(endingAnno)):
         for key in annoList:
             valueFound = False
@@ -126,13 +126,13 @@ def writeToCsv(varDict, headerDone, csvFile, delimeter=outerDelimeter):
     csvFile.write(delimeter.join(v for v in varDict.values()) + '\n')
     return headerDone
 
-def createCsv(extensionFilter, outputName):
+def createCsv(extensionFilter, outputName, folder):
     headerDone = False
     
     with open(wd + outputName, 'w') as csvFile:
-        for filename in os.listdir(wd + '/annotation'):
+        for filename in os.listdir(wd + '/' + folder):
                 if filename.endswith(extensionFilter):
-                    formatList, annoList, vepList, headerList, dataLines = getData(wd, filename)
+                    formatList, annoList, vepList, headerList, dataLines = getData(wd, filename, folder)
                     for line in dataLines:
                         varDict = parseFormatColumns(line, headerList, formatList, filename)
                         varDict = parseAnnoColumns(varDict, annoList)
@@ -140,9 +140,9 @@ def createCsv(extensionFilter, outputName):
                         
                         headerDone = writeToCsv(varDict, headerDone, csvFile)
 
-def addFreq():
+def addFreq(folder):
     import pandas
-    with open(wd + '/combined.csv', 'r') as inpObj:
+    with open(wd + '/combined_' + folder + '.tsv', 'r') as inpObj:
         DF = pandas.read_csv(inpObj, sep='\t')
     
     DF['VARIANT'] = DF['#CHROM'] + ':' + DF['POS'].astype(str) + ':' + DF['REF'] + '/' + DF['ALT']
@@ -157,10 +157,10 @@ def addFreq():
         whichSamples = []
         for l in grvarDF.groups[k]:
             whichSamples.append(DF['SAMPLE'][l])
-        grvarDict[k] = ', '.join(whichSamples)
+        grvarDict[k] = ', '.join([str(i) for i in whichSamples])
     DF['VAR_FREQ_WHICH'] = DF['VARIANT'].map(grvarDict)
 
-    with open(wd + '/combined_passed.csv', 'r') as inpObj:
+    with open(wd + '/combined_passed_' + folder + '.tsv', 'r') as inpObj:
         DF = pandas.read_csv(inpObj, sep='\t')
     
     DF['VARIANT'] = DF['#CHROM'] + ':' + DF['POS'].astype(str) + ':' + DF['REF'] + '/' + DF['ALT']
@@ -173,11 +173,14 @@ def addFreq():
     grDF = DF.groupby('SAMPLE')
 
     for df in grDF:
-        df[1].to_csv(wd + '/' + df[0] + '.csv', sep='\t', index=False)
+        df[1].to_csv(wd + '/' + folder + str(df[0]) + '.tsv', sep='\t', index=False)
 
     def many_vars(DF, l):
         return DF[DF['VARIANT'] == l][['SAMPLE', 'FORMAT_AF']]
 
-createCsv('vep.vcf.pass.vcf', '/combined_passed.csv')
-createCsv('vep.vcf', '/combined.csv')
-#addFreq()
+if __name__ == "__main__":
+    for folder in ['anno_soma', 'anno_germ']:
+        if os.path.isdir(wd + '/' + folder): 
+            createCsv('vep.vcf.pass.vcf', '/combined_passed_' + folder + '.tsv', folder)
+            createCsv('vep.vcf', '/combined_' + folder + '.tsv', folder)
+            #addFreq(folder)

@@ -1,7 +1,7 @@
 import os
 import sys
 
-wd = os.path.abspath(sys.argv[1])
+wd = os.environ['outputFolder']
 
 global innerDelimeter
 global outerDelimeter
@@ -157,7 +157,7 @@ def addFreq():
         whichSamples = []
         for l in grvarDF.groups[k]:
             whichSamples.append(DF['SAMPLE'][l])
-        grvarDict[k] = ', '.join(str(whichSamples))
+        grvarDict[k] = ', '.join(whichSamples)
     DF['VAR_FREQ_WHICH'] = DF['VARIANT'].map(grvarDict)
 
     with open(wd + '/combined_passed.csv', 'r') as inpObj:
@@ -173,11 +173,12 @@ def addFreq():
     grDF = DF.groupby('SAMPLE')
 
     for df in grDF:
-        df[1].to_csv(wd + '/' + str(df[0]) + '.csv', sep='\t', index=False)
+        df[1].to_csv(wd + '/' + df[0] + '.csv', sep='\t', index=False)
 
     def many_vars(DF, l):
         return DF[DF['VARIANT'] == l][['SAMPLE', 'FORMAT_AF']]
 
-createCsv('vep.vcf.pass.vcf', '/combined_passed.csv')
-createCsv('vep.vcf', '/combined.csv')
-addFreq()
+if __name__ == "__main__":
+    createCsv('vep.vcf.pass.vcf', '/combined_passed.csv')
+    createCsv('vep.vcf', '/combined.csv')
+    #addFreq()
