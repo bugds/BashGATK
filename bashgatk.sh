@@ -13,8 +13,12 @@ if [ $command == 'btil' ]; then
 elif [ $command == 'cvfc' ]; then
     bash ${scriptsDirectory}/create_variants_for_contamination_only_af.sh
 elif [ $command == 'proc' ]; then
+    source $conda
+    conda activate fastqc
     bash ${scriptsDirectory}/parallel_processing.sh
 elif [ $command == 'procAmp' ]; then
+    source $conda
+    conda activate fastqc
     bash ${scriptsDirectory}/amplicon_based_processing.sh
 elif [ $command == 'kumi' ]; then
     source $conda
