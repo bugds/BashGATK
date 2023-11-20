@@ -106,7 +106,7 @@ class ACMG_criteria(dict):
         return 'VUS'
 
 def process_bed(clinvar):
-    cv = pd.read_csv(clinvar, sep = '\t')
+    cv = pd.read_csv(clinvar, sep = '\t', low_memory = False)
     cv = cv[['#Chr', 'Start', 'End']]
     cv['#Chr'] = 'chr' + cv['#Chr'].astype(str)
     cv['Start'] = cv['Start'].astype(int)

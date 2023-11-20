@@ -20,6 +20,7 @@ rusDict = {
     'POS': 'Позиция',
     'REF': 'Реф_аллель',
     'ALT': 'Альт_аллель',
+    'QUAL': 'Качество',
     'ID': 'ID',
     'FORMAT_AF': 'Аллельная_частота',
     'FORMAT_VAF': 'Аллельная_частота',
@@ -161,7 +162,7 @@ def add_predictions(df):
     return df
 
 def replace_hexs(df):
-    for c in [i for i in rusDict.values() if not (i in ['Позиция', 'Аллельная_частота', 'Глубина_прочтения', 'Макс_попул_ч-та', 'Макс_попул_ч-та_1', 'Макс_попул_ч-та_2', *preds])]:
+    for c in [i for i in rusDict.values() if not (i in ['Позиция', 'Аллельная_частота', 'Глубина_прочтения', 'Качество', 'Макс_попул_ч-та', 'Макс_попул_ч-та_1', 'Макс_попул_ч-та_2', *preds])]:
         df[c] = df[c].map(replace_x3b)
     print('Replaced HEX ;')
     df['COSMIC_кодир'] = df['COSMIC_кодир'].map(manage_x3d)
@@ -254,13 +255,13 @@ if __name__ == "__main__":
     dfd = dict()
     if os.path.exists(wd + '/combined_passed_anno_germ.tsv'):
         dfd['germ'] = list()
-        for chunk in pd.read_csv(wd + '/combined_passed_anno_germ.tsv', sep = '\t', chunksize=chunk_size):
+        for chunk in pd.read_csv(wd + '/combined_passed_anno_germ.tsv', sep = '\t', chunksize=chunk_size, low_memory = False):
             chunk['Коллер'] = 'DeepVariant'
             dfd['germ'].append(chunk)
         print('Germline DF read')
     if os.path.exists(wd + '/combined_passed_anno_soma.tsv'):
         dfd['soma'] = list()
-        for chunk in pd.read_csv(wd + '/combined_passed_anno_soma.tsv', sep = '\t', chunksize=chunk_size):
+        for chunk in pd.read_csv(wd + '/combined_passed_anno_soma.tsv', sep = '\t', chunksize=chunk_size, low_memory = False):
             chunk['Коллер'] = 'Mutect2'
             dfd['soma'].append(chunk)
         print('Somatic DF read')
@@ -289,5 +290,6 @@ if __name__ == "__main__":
         dfd = classify_benign(dfd)
         print('Variants classified')
         df = pd.concat(dfd.values())
+        print(df['Качество'])
         df = df.sort_values(by = ['Хромосома', 'Позиция'])
         df.to_csv(wd + '/rus2.tsv', sep = '\t', index = False)
