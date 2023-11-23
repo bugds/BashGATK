@@ -92,6 +92,11 @@ for (t in test.set) {
         row.names = FALSE
     )
 
+    df <- read.csv(output.file)
+    df <- df[order(df$BF, decreasing=TRUE),]
+    df <- df[order(df$dgv.hg38, decreasing=TRUE),]
+    write.csv(df, output.file)
+
     output.rds <- paste("exome_calls_path", paste(t, 'rds', sep = '.'), sep = '/')
 
     saveRDS(all.exons, output.rds)
