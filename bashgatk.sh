@@ -51,6 +51,11 @@ elif [ $command == '2csvq' ]; then
     python3 ${scriptsDirectory}/go_csv_qgen.py
 elif [ $command == 'aved' ]; then
     bash ${scriptsDirectory}/average_depth.sh
+elif [ $command == 'exdh' ]; then
+    source $conda
+    conda activate ExomeDepth
+    python3 ${scriptsDirectory}/run_exome_depth.py
+    Rscript ${outputFolder}/CNV/script.R
 elif [ $command == 'cnvk' ]; then
     bash ${scriptsDirectory}/run_cnvkit.sh
 fi

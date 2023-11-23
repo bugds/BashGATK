@@ -119,4 +119,8 @@ elif [[ $command == 'cnvk' ]]; then
     export AFonly='path_to_gnomAD_AFonly_file'
     export LC_NUMERIC='en_US.UTF-8'
     export javaOpt="-Xms3000m"
+elif [[ $command == 'exdh' ]]; then
+    # run_cnvkit.sh
+    export Rscript='path_to_BashGATK/scripts/run_exome_depth.R'
+    export exomeTableFilePath='path_to_hg38_ExomeDepth_exons.bed'
 fi
