@@ -95,7 +95,23 @@ for (t in test.set) {
     df <- read.csv(output.file)
     df <- df[order(df$BF, decreasing=TRUE),]
     df <- df[order(df$dgv.hg38, decreasing=TRUE),]
+    top10 <- head(df, n = 10)
     write.csv(df, output.file)
+
+    pdf(file= paste("exome_calls_path", paste(t, 'pdf', sep = '.'), sep = '/')) 
+    for(i in 1:nrow(top10)) {
+        row <- top10[i,]
+        plot(
+            all.exons,
+            sequence = row$chromosome,
+            xlim = c(row$start - 100000, row$end + 100000),
+            count.threshold = 20,
+            main = paste(row$type, 'in', row$chromosome, sep = ' '),
+            cex.lab = 0.8,
+            with.gene = TRUE
+        )
+    }
+    dev.off()
 
     output.rds <- paste("exome_calls_path", paste(t, 'rds', sep = '.'), sep = '/')
 
