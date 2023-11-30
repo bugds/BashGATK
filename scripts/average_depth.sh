@@ -20,6 +20,9 @@ function parallelRun {
 
 function getDepths {
     local bamName=$(basename -- ${1} | cut -f 1 -d '.')
+
+    $samtools coverage $1 > ${outputFolder}depths/${bamName}_sexcheck.txt
+
     echo $bamName > ${outputFolder}depths/${bamName}.txt
 
     $samtools depth \
