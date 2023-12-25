@@ -36,7 +36,16 @@ elif [[ $command == 'proc' ]]; then
     export bwaVersion="$($bwa 2>&1 | grep -e '^Version' | sed 's/Version: //')"
     export bwaCommandline="$bwa mem -K 100000000 -p -v 3 -t 16 -Y $refFasta"
     export optimal_dup_pixel_distance=100 #In general, a pixel distance of 100 is recommended for data generated using unpatterned flowcells (e.g. HiSeq2500) and a pixel distance of 2500 is recommended for patterned flowcells (e.g. NovaSeq/HiSeq4000).
-    export parallelJobs=3
+    export parallelJobs1=5
+    export parallelJobs2=1
+    export parallelJobs3=1
+    export parallelJobs4=1
+    export parallelJobs5=1
+    export parallelJobs6=1
+    export parallelJobs7=1
+    export parallelJobs8=1
+    export parallelJobs9=1
+    export parallelJobs10=1
     export lane=1
 elif [[ $command == 'procAmp' ]]; then
     # amplicon_based_processing.sh
@@ -54,7 +63,23 @@ elif [[ $command == 'kumi' ]]; then
     export bwaCommandline1="$bwa mem -t 10 -M $refFasta"
     export bwaCommandline2="$bwa mem -v 3 -t 8 -Y -M $refFasta"
     export optimal_dup_pixel_distance=2500 #In general, a pixel distance of 100 is recommended for data generated using unpatterned flowcells (e.g. HiSeq2500) and a pixel distance of 2500 is recommended for patterned flowcells (e.g. NovaSeq/HiSeq4000).
-    export parallelJobs=3
+    export parallelJobs1=5
+    export parallelJobs2=1
+    export parallelJobs3=1
+    export parallelJobs4=1
+    export parallelJobs5=1
+    export parallelJobs6=1
+    export parallelJobs7=1
+    export parallelJobs8=1
+    export parallelJobs9=1
+    export parallelJobs10=1
+    export parallelJobs11=1
+    export parallelJobs12=1
+    export parallelJobs13=1
+    export parallelJobs14=1
+    export parallelJobs15=1
+    export parallelJobs16=1
+    export parallelJobs17=1
     export lane=1
 elif [[ $command == 'deep' ]]; then
     # deepvariant.sh

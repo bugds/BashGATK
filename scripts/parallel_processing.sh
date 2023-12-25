@@ -50,7 +50,7 @@ function makeDirectory {
 }
 
 function fastqQualityControl {
-    $fastqc -t $parallelJobs $1 -o $2
+    $fastqc -t $3 $1 -o $2
     multiqc -f $2 -o $2
 }
 
@@ -69,7 +69,8 @@ function trimFastq {
                 -g -W 5 -q 20 -u 40 -x -3 -l 75 -c \
                 -j "${outputFolder}qc_2/${output}_fastp.json" \
                 -h "${outputFolder}qc_2/${output}_fastp.html" \
-                -w 12
+                --detect_adapter_for_pe \
+                -w 12 -t $1
         fi
     done
 }
@@ -98,29 +99,28 @@ function pairedFastQsToUnmappedBAM {
 }
 
 function validateSam {
-    local files="${outputFolder}unmapped/*"
+    bam=$1
+    bamName=$(basename $bam)
 
-    for bam in $files; do
-        $gatk ValidateSamFile \
-            -I $bam \
-            --QUIET true \
-            -M SUMMARY \
-            -O "${outputFolder}temporary_files/validate.txt"
-        
-        local result=$(head -n 1 "${outputFolder}temporary_files/validate.txt")
-        
-        if ! [[ $result == 'No errors found' ]]; then
-            echo "${bam} is invalid"
-            exit 1
-        fi
-    done
+    $gatk ValidateSamFile \
+        -I $bam \
+        --QUIET true \
+        -M SUMMARY \
+        -O "${outputFolder}temporary_files/validate${bamName}.txt"
+    
+    local result=$(head -n 1 "${outputFolder}temporary_files/validate${bamName}.txt")
+    
+    if ! [[ $result == 'No errors found' ]]; then
+        echo "${bam} is invalid"
+        exit 1
+    fi
 }
 
 function parallelRun {  
     local files=$2
 
     export -f $1
-    parallel -j $parallelJobs $1 ::: $files
+    parallel -j $3 $1 ::: $files
 }
 
 function samToFastqAndBwaMem {
@@ -270,50 +270,50 @@ function applyBqsr {
 # MAIN
 
 makeDirectory qc_1
-fastqQualityControl "${inputFolder}/*" "${outputFolder}/qc_1"
+fastqQualityControl "${inputFolder}/*" "${outputFolder}/qc_1" $parallelJobs1
 
 makeDirectory qc_2
 makeDirectory trimmed
-trimFastq
+trimFastq $parallelJobs2
 sleep 1
 
-fastqQualityControl "${outputFolder}trimmed/*" "${outputFolder}/qc_2"
+fastqQualityControl "${outputFolder}trimmed/*" "${outputFolder}/qc_2" $parallelJobs1
 sleep 1
 
 makeDirectory unmapped
-parallelRun pairedFastQsToUnmappedBAM "${outputFolder}trimmed/*"
+parallelRun pairedFastQsToUnmappedBAM "${outputFolder}trimmed/*" $parallelJobs3
 sleep 1
 rm -r "${outputFolder}trimmed"
 
 makeDirectory temporary_files
-validateSam
+parallelRun validateSam "${outputFolder}unmapped/*" $parallelJobs4
 sleep 1
 
 makeDirectory unmerged
 makeDirectory premerged
-parallelRun samToFastqAndBwaMem "${outputFolder}unmapped/*"
+parallelRun samToFastqAndBwaMem "${outputFolder}unmapped/*" $parallelJobs5
 sleep 1
 rm -r "${outputFolder}unmapped"
 
 makeDirectory merged
-parallelRun mergeSamFiles "${outputFolder}premerged/*"
+parallelRun mergeSamFiles "${outputFolder}premerged/*" $parallelJobs6
 sleep 1
 rm -r "${outputFolder}unmerged"
 rm -r "${outputFolder}premerged"
 
-parallelRun querynameSort "${outputFolder}merged/*.bam"
+parallelRun querynameSort "${outputFolder}merged/*.bam" $parallelJobs7
 sleep 1
 makeDirectory duplicates_marked
-parallelRun markDuplicates "${outputFolder}merged/*.bam"
+parallelRun markDuplicates "${outputFolder}merged/*.bam" $parallelJobs8
 sleep 1
 
 makeDirectory sorted
-parallelRun sortAndFixTags "${outputFolder}duplicates_marked/*.bam"
+parallelRun sortAndFixTags "${outputFolder}duplicates_marked/*.bam" $parallelJobs9
 sleep 1
 
 makeDirectory temporary_files/recal_reports
-parallelRun baseRecalibrator "${outputFolder}sorted/*.bam"
+parallelRun baseRecalibrator "${outputFolder}sorted/*.bam" $parallelJobs10
 sleep 1
 
 makeDirectory recalibrated
-parallelRun applyBqsr "${outputFolder}sorted/*.bam"
+parallelRun applyBqsr "${outputFolder}sorted/*.bam" $parallelJobs11

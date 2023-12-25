@@ -12,15 +12,15 @@ function makeDirectory {
 }
 
 function fastqQualityControl {
-    $fastqc -t $parallelJobs $1 -o $2
+    $fastqc -t $3 $1 -o $2
     multiqc -f $2 -o $2
 }
 
-function parallelRun {  
+function parallelRun {
     local files=$2
 
     export -f $1
-    parallel -j $parallelJobs $1 ::: $files
+    parallel -j $3 $1 ::: $files
 }
 
 function getMetadata {
@@ -86,22 +86,21 @@ function pairedFastQsToUnmappedBAM {
 }
 
 function validateSam {
-    local files="${outputFolder}unmapped/*"
+    bam=$1
+    bamName=$(basename $bam)
 
-    for bam in $files; do
-        $gatk ValidateSamFile \
-            -I $bam \
-            --QUIET true \
-            -M SUMMARY \
-            -O "${outputFolder}temporary_files/validate.txt"
-        
-        local result=$(head -n 1 "${outputFolder}temporary_files/validate.txt")
-        
-        if ! [[ $result == 'No errors found' ]]; then
-            echo "${bam} is invalid"
-            exit 1
-        fi
-    done
+    $gatk ValidateSamFile \
+        -I $bam \
+        --QUIET true \
+        -M SUMMARY \
+        -O "${outputFolder}temporary_files/validate${bamName}.txt"
+    
+    local result=$(head -n 1 "${outputFolder}temporary_files/validate${bamName}.txt")
+    
+    if ! [[ $result == 'No errors found' ]]; then
+        echo "${bam} is invalid"
+        exit 1
+    fi
 }
 
 function extractUMIs {
@@ -152,8 +151,8 @@ function qcAndAlign {
     | \
     $samtools view -Sb > "${outputFolder}unmerged/${output}.bam"
 
-    $fastqc -t $parallelJobs "${outputFolder}fastq_trimmed/${output}_R1.fastq.gz" -o "${outputFolder}/qc_2"
-    $fastqc -t $parallelJobs "${outputFolder}fastq_trimmed/${output}_R2.fastq.gz" -o "${outputFolder}/qc_2"
+    $fastqc "${outputFolder}fastq_trimmed/${output}_R1.fastq.gz" -o "${outputFolder}/qc_2"
+    $fastqc "${outputFolder}fastq_trimmed/${output}_R2.fastq.gz" -o "${outputFolder}/qc_2"
 
     rm "${outputFolder}fastq_trimmed/${output}_R1.fastq.gz"
     rm "${outputFolder}fastq_trimmed/${output}_R2.fastq.gz"
@@ -393,30 +392,30 @@ function getDepths {
       >> "${outputFolder}depths/depthReport.txt"
 }
 
-# MAIN
+### MAIN
 
 makeDirectory unmapped
-parallelRun pairedFastQsToUnmappedBAM "${outputFolder}fastq/*"
+parallelRun pairedFastQsToUnmappedBAM "${outputFolder}fastq/*" $parallelJobs1
 sleep 1
 
 makeDirectory temporary_files
-validateSam
+parallelRun validateSam "${outputFolder}unmapped/*" $parallelJobs2
 sleep 1
 
 makeDirectory UMIs_extracted
-parallelRun extractUMIs "${outputFolder}unmapped/*"
+parallelRun extractUMIs "${outputFolder}unmapped/*" $parallelJobs3
 
 ### QC
 
 makeDirectory qc_1
-fastqQualityControl "${outputFolder}fastq/*" "${outputFolder}/qc_1"
+fastqQualityControl "${outputFolder}fastq/*" "${outputFolder}/qc_1" $parallelJobs4
 
 makeDirectory fastq_for_qc
 makeDirectory fastq_trimmed
 makeDirectory qc_2
 makeDirectory unmerged
 makeDirectory premerged
-parallelRun qcAndAlign "${outputFolder}UMIs_extracted/*"
+parallelRun qcAndAlign "${outputFolder}UMIs_extracted/*" $parallelJobs5
 sleep 1
 
 multiqc -f "${outputFolder}/qc_2" -o "${outputFolder}/qc_2"
@@ -428,7 +427,7 @@ rm -r "${outputFolder}UMIs_extracted"
 sleep 1
 
 makeDirectory merged
-parallelRun mergeSamFiles "${outputFolder}premerged/*"
+parallelRun mergeSamFiles "${outputFolder}premerged/*" $parallelJobs6
 sleep 1
 
 rm -r "${outputFolder}unmapped"
@@ -438,12 +437,12 @@ sleep 1
 ### SOMATIC PART
 
 makeDirectory only_proper
-parallelRun onlyProperPairs "${outputFolder}merged/*"
+parallelRun onlyProperPairs "${outputFolder}merged/*" $parallelJobs7
 sleep 1
 
 makeDirectory reads_grouped
 makeDirectory reads_called
-parallelRun groupSameUMIReads "${outputFolder}only_proper/*"
+parallelRun groupSameUMIReads "${outputFolder}only_proper/*" $parallelJobs8
 
 rm -r "${outputFolder}only_proper"
 sleep 1
@@ -451,14 +450,14 @@ sleep 1
 makeDirectory fastq_for_realignment
 makeDirectory realigned
 makeDirectory realigned_merged
-parallelRun realign "${outputFolder}reads_called/*"
+parallelRun realign "${outputFolder}reads_called/*" $parallelJobs9
 
 rm -r "${outputFolder}reads_grouped"
 rm -r "${outputFolder}reads_called"
 sleep 1
 
 makeDirectory sorted
-parallelRun sortAndFixTags "${outputFolder}realigned_merged/*.bam"
+parallelRun sortAndFixTags "${outputFolder}realigned_merged/*.bam" $parallelJobs10
 sleep 1
 
 rm -r "${outputFolder}fastq_for_realignment"
@@ -467,15 +466,15 @@ rm -r "${outputFolder}realigned_merged"
 sleep 1
 
 makeDirectory temporary_files/recal_reports
-parallelRun baseRecalibrator "${outputFolder}sorted/*.bam"
+parallelRun baseRecalibrator "${outputFolder}sorted/*.bam" $parallelJobs11
 sleep 1
 
 makeDirectory recalibrated
-parallelRun applyBqsr "${outputFolder}sorted/*.bam"
+parallelRun applyBqsr "${outputFolder}sorted/*.bam" $parallelJobs12
 
 makeDirectory depths
 > "${outputFolder}depths/depthReport.txt"
-parallelRun getDepths "${outputFolder}sorted/*.bam"
+parallelRun getDepths "${outputFolder}sorted/*.bam" $parallelJobs13
 mv "${outputFolder}depths/depthReport.txt" "${outputFolder}depths/depthReport_somatic.txt"
 
 rm -r "${outputFolder}sorted"
@@ -483,26 +482,26 @@ sleep 1
 
 ### GERMINAL PART
 
-parallelRun querynameSort "${outputFolder}merged/*.bam"
+parallelRun querynameSort "${outputFolder}merged/*.bam" $parallelJobs14
 sleep 1
 makeDirectory duplicates_marked
-parallelRun markDuplicates "${outputFolder}merged/*.bam"
+parallelRun markDuplicates "${outputFolder}merged/*.bam" $parallelJobs15
 sleep 1
 
 rm -r "${outputFolder}merged"
 sleep 1
 
 makeDirectory sorted
-parallelRun sortAndFixTags "${outputFolder}duplicates_marked/*.bam"
+parallelRun sortAndFixTags "${outputFolder}duplicates_marked/*.bam" $parallelJobs16
 sleep 1
 
 rm -r "${outputFolder}duplicates_marked"
 sleep 1
 
 > "${outputFolder}depths/depthReport.txt"
-parallelRun getDepths "${outputFolder}sorted/*.bam"
+parallelRun getDepths "${outputFolder}sorted/*.bam" $parallelJobs17
 mv "${outputFolder}depths/depthReport.txt" "${outputFolder}depths/depthReport_germinal.txt"
 
-# DEEPVARIANT DOESNT REQUIRE BQSR: 10.1016/j.xpro.2022.101418
+### DEEPVARIANT DOESNT REQUIRE BQSR: 10.1016/j.xpro.2022.101418
 
 sleep 1
