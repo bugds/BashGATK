@@ -9,6 +9,21 @@ function makeDirectory {
     fi
 }
 
+function decomposeNormalize {
+    base=$(basename -- $1)
+    $bcftools \
+        norm -m-both \
+        -o ${outputFolder}/${folder}/${base}_step1 \
+        $1
+
+    $bcftools \
+        norm \
+        -f $refFasta \
+        -o ${outputFolder}/${folder}/${base}_step2 \
+        ${outputFolder}/${folder}/${base}_step1
+}
+export -f decomposeNormalize
+
 function liftoverVcf {
     if !( test -f "${outputFolder}/annotation/$2_lifted.vcf" ); then
         $gatk LiftoverVcf \
@@ -33,11 +48,13 @@ function checkRejected {
         echo "$1 is ok"
     fi
 }
+export -f checkRejected
 
 function annotateAnnovar {
     $annovar \
         ${outputFolder}annotation/$1_lifted.vcf \
         $annovarDb \
+        -thread $parallelJobs\
         -buildver $buildVer \
         -out ${outputFolder}annotation/${1}_anno \
         -remove \
@@ -48,21 +65,42 @@ function annotateAnnovar {
         -xreffile $xreffile \
         -vcfinput
 }
+export -f annotateAnnovar
 
 function annotateVep {
+    base=$(basename -- $1)
     $vep \
         --offline \
         --everything \
-        --fasta $fasta \
+        --fasta $refFasta \
         --vcf \
-        -i ${outputFolder}annotation/${1}_anno.hg38_multianno.vcf \
-        -o ${outputFolder}annotation/${1}_vep.vcf
+        --fork $parallelJobs\
+        --buffer_size $bufferSize \
+        --no_stats \
+        --force_overwrite \
+        --plugin AlphaMissense,file=$AlphaMissensePath \
+        -i ${outputFolder}/${folder}/${base}_anno.hg38_multianno.vcf \
+        -o ${outputFolder}/${folder}/${base}_vep.vcf
 }
+export -f annotateVep
 
 function onlyPASS {
-    local file=${outputFolder}annotation/${1}_vep.vcf
+    base=$(basename -- $1)
+    local file=${outputFolder}/${folder}/${base}_vep.vcf
 
     awk -F '\t' '{if($0 ~ /\#/) print; else if($7 == "PASS") print}' $file > ${file}.pass.vcf
+}
+export -f onlyPASS
+
+function annotate {
+    filename=$1
+    base=$(basename -- $filename)
+    echo $filename
+    liftoverVcf $file $base
+    checkRejected $base
+    decomposeNormalize $filename
+    annotateAnnovar $filename
+    annotateVep $filename
 }
 
 for file in ${outputFolder}annotation/*.anno.vcf; do
