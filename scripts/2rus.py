@@ -30,8 +30,8 @@ rusDict = {
     'INFO_ANNO_Func.refGene': 'Последствие',
     'INFO_ANNO_ExonicFunc.refGene': 'Кодирующее_последствие',
     'INFO_ANNO_AAChange.refGene': 'Полная_запись',
-    'INFO_ANNO_gnomad312_AF': 'Макс_попул_ч-та_1', # Предпочтительнее!!!
-    'INFO_VEP_AF': 'Макс_попул_ч-та_2',
+    'INFO_ANNO_gnomad40_genome_AF': 'Макс_попул_ч-та_1',
+    'INFO_ANNO_gnomad40_exome_AF': 'Макс_попул_ч-та_2',
     'Макс_попул_ч-та': 'Макс_попул_ч-та',
     'In_silico_прогноз': 'In_silico_прогноз',
     'INFO_ANNO_SIFT_pred': 'PredSIFT',
