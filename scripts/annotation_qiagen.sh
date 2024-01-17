@@ -104,6 +104,7 @@ function annotate {
 }
 
 for file in ${outputFolder}annotation/*.anno.vcf; do
+    export folder="annotation"
     base=$(basename -- $file)
     echo $base
     liftoverVcf $file $base
