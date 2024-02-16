@@ -9,12 +9,37 @@ function makeDirectory {
     fi
 }
 
+function liftoverVcf {
+    if !( test -f "${outputFolder}/annotation/${2}_lifted.vcf" ); then
+        $gatk LiftoverVcf \
+            --INPUT $1 \
+            --OUTPUT ${outputFolder}/annotation/${2}_lifted.vcf \
+            --REFERENCE_SEQUENCE $refFasta \
+            --CHAIN $chain \
+            --REJECT ${outputFolder}/annotation/${2}_prerejected.vcf
+    fi
+}
+
+function checkRejected {
+    # Coordinates
+    grep "MismatchedRefAllele" ${outputFolder}/annotation/$1_prerejected.vcf > ${outputFolder}/annotation/$1_rejected.vcf
+    cat ${outputFolder}/annotation/${1}_rejected.vcf | grep -v ^## | awk -F 'AttemptedLocus=' '{print $2}' | cut -d ";" -f 1 | cut -d "=" -f 2 | tail -n +2 | sed "s/:/\t/" | sed "s/-/\t/" > ${outputFolder}/annotation/${1}_rejected.bed
+    cat ${outputFolder}/annotation/${1}_rejected.bed | awk -F '\t' '{ printf("%s\t%s\t%d\n", $1, $2-1, $3) }' > ${outputFolder}/annotation/${1}_rejected_plus.bed
+    # Nucleotides
+    if [[ $(diff <(cat ${outputFolder}/annotation/${1}_rejected.vcf | grep -v ^## | cut -f 5 | tail -n +2) <($bedtools getfasta -fi $refFasta -bed ${outputFolder}/annotation/${1}_rejected_plus.bed | sed -n 'n;p')) ]]; then
+        echo "$1 is bad"
+        exit 1
+    else
+        echo "$1 is ok"
+    fi
+}
+export -f checkRejected
+
 function decomposeNormalize {
-    base=$(basename -- $1)
     $bcftools \
         norm -m-both \
         -o ${outputFolder}/${folder}/${base}_step1 \
-        $1
+        ${outputFolder}annotation/${1}_lifted.vcf
 
     $bcftools \
         norm \
@@ -24,35 +49,9 @@ function decomposeNormalize {
 }
 export -f decomposeNormalize
 
-function liftoverVcf {
-    if !( test -f "${outputFolder}/annotation/$2_lifted.vcf" ); then
-        $gatk LiftoverVcf \
-            --INPUT $1 \
-            --OUTPUT ${outputFolder}/annotation/$2_lifted.vcf \
-            --REFERENCE_SEQUENCE $refFasta \
-            --CHAIN $chain \
-            --REJECT ${outputFolder}/annotation/$2_prerejected.vcf
-    fi
-}
-
-function checkRejected {
-    # Coordinates
-    grep "MismatchedRefAllele" ${outputFolder}/annotation/$1_prerejected.vcf > ${outputFolder}/annotation/$1_rejected.vcf
-    cat ${outputFolder}/annotation/$1_rejected.vcf | grep -v ^## | awk -F 'AttemptedLocus=' '{print $2}' | cut -d ";" -f 1 | cut -d "=" -f 2 | tail -n +2 | sed "s/:/\t/" | sed "s/-/\t/" > ${outputFolder}/annotation/$1_rejected.bed
-    cat ${outputFolder}/annotation/$1_rejected.bed | awk -F '\t' '{ printf("%s\t%s\t%d\n", $1, $2-1, $3) }' > ${outputFolder}/annotation/$1_rejected_plus.bed
-    # Nucleotides
-    if [[ $(diff <(cat ${outputFolder}/annotation/$1_rejected.vcf | grep -v ^## | cut -f 5 | tail -n +2) <($bedtools getfasta -fi $refFasta -bed ${outputFolder}/annotation/$1_rejected_plus.bed | sed -n 'n;p')) ]]; then
-        echo "$1 is bad"
-        exit 1
-    else
-        echo "$1 is ok"
-    fi
-}
-export -f checkRejected
-
 function annotateAnnovar {
     $annovar \
-        ${outputFolder}annotation/$1_lifted.vcf \
+        ${outputFolder}annotation/${1}_step2 \
         $annovarDb \
         -thread $parallelJobs\
         -buildver $buildVer \
@@ -92,16 +91,16 @@ function onlyPASS {
 }
 export -f onlyPASS
 
-function annotate {
-    filename=$1
-    base=$(basename -- $filename)
-    echo $filename
-    liftoverVcf $file $base
-    checkRejected $base
-    decomposeNormalize $filename
-    annotateAnnovar $filename
-    annotateVep $filename
-}
+# function annotate {
+#     filename=$1
+#     base=$(basename -- $filename)
+#     echo $filename
+#     liftoverVcf $file $base
+#     checkRejected $base
+#     decomposeNormalize $filename
+#     annotateAnnovar $filename
+#     annotateVep $filename
+# }
 
 for file in ${outputFolder}annotation/*.anno.vcf; do
     export folder="annotation"
@@ -109,6 +108,7 @@ for file in ${outputFolder}annotation/*.anno.vcf; do
     echo $base
     liftoverVcf $file $base
     checkRejected $base
+    decomposeNormalize $base
     annotateAnnovar $base
     annotateVep $base
     onlyPASS $base
