@@ -70,7 +70,7 @@ function trimFastq {
                 -j "${outputFolder}qc_2/${output}_fastp.json" \
                 -h "${outputFolder}qc_2/${output}_fastp.html" \
                 --detect_adapter_for_pe \
-                -w 12 -t $1
+                -w 12 $1
         fi
     done
 }
