@@ -31,7 +31,8 @@ def getData(wd, filename):
     with open(wd + '/annotation/' + filename, 'r') as vcfFile:
         lines = vcfFile.readlines()
 
-        infoLines = [l.replace('\n', '') for l in lines if l.startswith('##INFO=')]
+        preInfoLines = '\n'.join(lines).split('##reference=')[-1]
+        infoLines = [l.replace('\n', '') for l in preInfoLines.split('\n') if l.startswith('##INFO=')]
         formatLines = [l.replace('\n', '') for l in lines if l.startswith('##FORMAT=')]
         
         formatList = [l.split('##FORMAT=<ID=')[1].split(',')[0] for l in formatLines]
@@ -86,7 +87,7 @@ def parseAnnoColumns(varDict, annoList, delimeter=innerDelimeter):
                             varDict['INFO_ANNO_' + key] = element.split('=')[1]
                         except IndexError:
                             varDict['INFO_ANNO_' + key] = element
-                    break
+                    # break
             if not valueFound:
                 varDict['INFO_ANNO_' + key] = '.'
         annoData = annoData[annoData.index(endingAnno) + 1:]
@@ -140,45 +141,45 @@ def createCsv(extensionFilter, outputName):
                         
                         headerDone = writeToCsv(varDict, headerDone, csvFile)
 
-def addFreq():
-    import pandas
+def add_inhouse_freq():
+    import pandas as pd
+
+    freq_file = os.environ['freq_file']
+    
     with open(wd + '/combined.csv', 'r') as inpObj:
-        DF = pandas.read_csv(inpObj, sep='\t')
+        df = pd.read_csv(inpObj, sep='\t')
     
-    DF['VARIANT'] = DF['#CHROM'] + ':' + DF['POS'].astype(str) + ':' + DF['REF'] + '/' + DF['ALT']
-    
-    var_freq = DF['VARIANT'].value_counts()
+    df['temp_id'] = df['#CHROM'] + ':' + df['POS'].astype(str) + ':' + df['REF'] + '>' + df['ALT'] + '_' + 'smCounter2'
+    if os.path.exists(freq_file):
+        freq = pd.read_csv(freq_file, sep = '\t')
+        freq = pd.concat([freq, df[['temp_id', 'SAMPLE']]])
+    else:
+        freq = df[['temp_id', 'SAMPLE']]
+    freq = freq.drop_duplicates()
+    freq.to_csv(freq_file, index = False, sep = '\t')
+    counts = freq['temp_id'].value_counts()
+    df['InHouse_calls'] = df['temp_id'].map(counts)
+    sample_num = len(freq['SAMPLE'].unique())
+    print('Total number of samples:', sample_num)
+    df['InHouse_freqs'] = df['InHouse_calls'] / sample_num
+    print('Added in-house frequency')
 
-    DF['VAR_FREQ'] = DF['VARIANT'].map(var_freq)
-    
-    grvarDF = DF.groupby('VARIANT')
-    grvarDict = {}
-    for k in grvarDF.groups:
-        whichSamples = []
-        for l in grvarDF.groups[k]:
-            whichSamples.append(DF['SAMPLE'][l])
-        grvarDict[k] = ', '.join(whichSamples)
-    DF['VAR_FREQ_WHICH'] = DF['VARIANT'].map(grvarDict)
-
-    with open(wd + '/combined_passed.csv', 'r') as inpObj:
-        DF = pandas.read_csv(inpObj, sep='\t')
-    
-    DF['VARIANT'] = DF['#CHROM'] + ':' + DF['POS'].astype(str) + ':' + DF['REF'] + '/' + DF['ALT']
-    DF['VAR_FREQ'] = DF['VARIANT'].map(var_freq)
-    
-    var_freq = DF['VARIANT'].value_counts()
-    DF['VAR_FREQ_PASS'] = DF['VARIANT'].map(var_freq)
-    DF['VAR_FREQ_WHICH'] = DF['VARIANT'].map(grvarDict)
-    
-    grDF = DF.groupby('SAMPLE')
-
-    for df in grDF:
-        df[1].to_csv(wd + '/' + df[0] + '.csv', sep='\t', index=False)
-
-    def many_vars(DF, l):
-        return DF[DF['VARIANT'] == l][['SAMPLE', 'FORMAT_AF']]
+    tableP = pd.read_csv(wd + '/combined_passed.csv', sep = '\t')
+    tableP['temp_id'] = tableP['#CHROM'] + ':' + tableP['POS'].astype(str) + ':' + tableP['REF'] + '>' + tableP['ALT'] + '_' + 'smCounter2'
+    tableP['InHouse_calls'] = tableP['temp_id'].map(counts)
+    tableP['InHouse_freqs'] = tableP['InHouse_calls'] / sample_num
+    tableP = tableP.drop(columns=['temp_id'])
+    tableP['ID'] = tableP['#CHROM'] + '-' + tableP['POS'].astype(str) + '-' + tableP['REF'] + '-' + tableP['ALT']
+    tableP['INFO_ANNO_gnomad40_genome_AF'] = tableP['INFO_ANNO_gnomad40_genome_AF'].replace('.', -1).astype(float)
+    tableP['INFO_ANNO_gnomad40_exome_AF'] = tableP['INFO_ANNO_gnomad40_exome_AF'].replace('.', -1).astype(float)
+    tableP['popAF'] = tableP[['INFO_ANNO_gnomad40_genome_AF', 'INFO_ANNO_gnomad40_exome_AF']].max(axis=1)
+    tableP['INFO_ANNO_gnomad40_genome_AF'] = tableP['INFO_ANNO_gnomad40_genome_AF'].replace(-1, '.')
+    tableP['INFO_ANNO_gnomad40_exome_AF'] = tableP['INFO_ANNO_gnomad40_exome_AF'].replace(-1, '.')
+    tableP['popAF'][tableP['popAF'] > 0.03] = 'common'
+    tableP['popAF'][tableP['popAF'] != 'common'] = 'uncommon'
+    tableP.to_csv(wd + '/combined_passed.csv', sep = '\t', index = False)
 
 if __name__ == "__main__":
     createCsv('vep.vcf.pass.vcf', '/combined_passed.csv')
     createCsv('vep.vcf', '/combined.csv')
-    #addFreq()
+    add_inhouse_freq()
