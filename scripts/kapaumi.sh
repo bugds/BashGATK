@@ -110,7 +110,7 @@ function extractUMIs {
 
     java -Dsamjdk.compression_level=${compressionLevel} ${javaOpt} -jar $fgbio ExtractUmisFromBam \
         -i $1 \
-        -r 3M3S+T 3M3S+T \
+        -r $umiTemplate1 $umiTemplate2 \
         -t RX \
         -a true \
         -o "${outputFolder}UMIs_extracted/${output}.bam"
@@ -138,8 +138,8 @@ function qcAndAlign {
         -g -W 5 -q 20 -u 40 -x -3 -l 75 -c \
         -j "${outputFolder}fastq_trimmed/${output}_fastp.json" \
         -h "${outputFolder}fastq_trimmed/${output}_fastp.html" \
-        --adapter_sequence=AGATCGGAAGAGCACACGTCTGAACTCCAGTCA \
-        --adapter_sequence_r2=AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT \
+        --adapter_sequence="${adapter1}" \
+        --adapter_sequence_r2="${adapter2}" \
         -w 12
     
     rm "${outputFolder}fastq_for_qc/${output}_R1.fastq.gz"
